@@ -21,7 +21,36 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sln
+*.env
 package-lock.json
 *.sw?
 # Dependency directories
 node_modules/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+!.env.test
+!.env.production
+
+# Security Keys and Certificates
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.jks
+
+# Generated Reports and Data
+*.csv
+*.pdf
+*.sqlite
+*.db
+
+# Temporary and OS Files
+Thumbs.db
+*.swp
+coverage/
+tmp/
+temp/
