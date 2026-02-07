@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Report from './src/models/Report.js'; // Adjust path as needed
+import Issue from './src/models/Issue.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,8 +13,8 @@ const checkIndexes = async () => {
         await mongoose.connect(process.env.MONGO_URI);
         console.log('Connected to MongoDB');
 
-        const indexes = await Report.listIndexes();
-        console.log('Current Indexes:', JSON.stringify(indexes, null, 2));
+        const indexes = await Issue.listIndexes();
+        console.log('Current Issue Indexes:', JSON.stringify(indexes, null, 2));
 
         await mongoose.disconnect();
     } catch (error) {

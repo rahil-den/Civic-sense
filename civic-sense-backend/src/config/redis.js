@@ -1,27 +1,16 @@
 import Redis from 'ioredis';
+import dotenv from 'dotenv';
 
-let redisClient;
+dotenv.config();
 
-const connectRedis = () => {
-    if (!redisClient) {
-        redisClient = new Redis(process.env.REDIS_URI, {
-            retryStrategy: (times) => {
-                const delay = Math.min(times * 50, 2000);
-                return delay;
-            },
-            maxRetriesPerRequest: null,
-        });
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
-        redisClient.on('connect', () => {
-            console.log('Redis Connected');
-        });
+redis.on('connect', () => {
+    console.log('Redis connected successfully');
+});
 
-        redisClient.on('error', (err) => {
-            console.error('Redis Error:', err);
-        });
-    }
-    return redisClient;
-};
+redis.on('error', (err) => {
+    console.error('Redis connection error:', err);
+});
 
-export { connectRedis };
-export default connectRedis(); // Export singleton instance by default, but allow manual connect call
+export default redis;

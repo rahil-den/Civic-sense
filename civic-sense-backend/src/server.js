@@ -4,14 +4,16 @@ import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import connectRedis from './config/redis.js';
-import Report from './models/Report.js'; // Ensure model is loaded for indexing
-import Admin from './models/Admin.js';
 import { verifyToken, requireRole } from './middleware/auth.js';
-import { logAction } from './modules/audit/auditLogger.js';
 
-import analyticsRoutes from './modules/analytics/analytics.routes.js';
-import governanceRoutes from './modules/governance/governance.routes.js';
-import exportRoutes from './modules/export/export.routes.js';
+import authRoutes from './routes/authRoutes.js';
+import locationRoutes from './routes/locationRoutes.js';
+import issueRoutes from './routes/issueRoutes.js';
+import communityRoutes from './routes/communityRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
+import governanceRoutes from './routes/governanceRoutes.js';
+import exportRoutes from './routes/exportRoutes.js';
 
 import helmet from 'helmet';
 import cors from 'cors';
@@ -23,17 +25,6 @@ dotenv.config();
 
 // Connect to Database
 connectDB();
-
-// Force Sync Indexes on Startup (As per requirement to ensure performance)
-mongoose.connection.once("open", async () => {
-    try {
-        await Report.syncIndexes();
-        await Admin.syncIndexes();
-        console.log("MongoDB Indexes Synced Successfully (Reports & Admins)");
-    } catch (err) {
-        console.error("Index Sync Failed:", err);
-    }
-});
 
 // Connect to Redis
 const redis = connectRedis;
@@ -58,7 +49,7 @@ const io = new Server(httpServer, {
 });
 
 // Make io accessible globally via app
-app.set('socketio', io);
+app.set('io', io);
 
 app.use(express.json());
 
@@ -68,25 +59,17 @@ app.get('/', (req, res) => {
 });
 
 // Mount Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/locations', locationRoutes);
+app.use('/api/issues', issueRoutes);
+app.use('/api/community', communityRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/governance', governanceRoutes);
 app.use('/api/export', exportRoutes);
 
-// Test Routes for RBAC
-app.get('/test-admin', verifyToken, requireRole('ADMIN'), (req, res) => {
-    logAction(req.user.id, 'ACCESS_ADMIN_ROUTE', 'ROUTE', '/test-admin');
-    res.json({ message: 'Admin access granted', user: req.user });
-});
-
-app.get('/test-superadmin', verifyToken, requireRole('SUPERADMIN'), (req, res) => {
-    logAction(req.user.id, 'ACCESS_SUPERADMIN_ROUTE', 'ROUTE', '/test-superadmin');
-    res.json({ message: 'Superadmin access granted', user: req.user });
-});
-
 // Global Error Handler
 app.use(errorHandler);
-
-import mongoose from 'mongoose';
 
 const PORT = process.env.PORT || 3000;
 
