@@ -326,9 +326,7 @@ SOCKET_URL=http://localhost:3000
 
 ## 📱 Mobile App Screenshots
 
-| Home | Map | Report | Updates | Profile |
-|------|-----|--------|---------|---------|
-| Issue feed | Location view | Camera capture | Notifications | Settings |
+> 🖼️ **Screenshots will be added soon!**
 
 ---
 
