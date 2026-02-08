@@ -1,6 +1,6 @@
 import Issue from '../models/Issue.js';
 import PDFDocument from 'pdfkit';
-import { json2csv } from 'json2csv';
+import { parse } from 'json2csv';
 import fs from 'fs';
 
 // GET /api/export/city?cityId= (CSV)
@@ -13,7 +13,7 @@ export const exportCityIssues = async (req, res) => {
 
         // Convert to CSV
         // Check fields since we use lean(), we get raw DB objects (camelCase now)
-        const csv = json2csv(issues);
+        const csv = parse(issues);
 
         res.header('Content-Type', 'text/csv');
         res.attachment(`city_issues_${cityId}.csv`);

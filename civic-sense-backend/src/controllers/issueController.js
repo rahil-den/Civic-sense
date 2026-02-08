@@ -198,3 +198,64 @@ export const resolveIssue = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// Get Duplicate/Important Issues (Admin)
+export const getDuplicateIssues = async (req, res) => {
+    try {
+        const cityId = req.query.cityId || req.user.cityAccess?.[0];
+
+        if (!cityId) {
+            return res.status(400).json({ message: 'City ID required' });
+        }
+
+        // Find all active issues in city
+        const issues = await Issue.find({
+            cityId,
+            status: { $in: ['REPORTED', 'IN_PROGRESS'] }
+        }).populate('categoryId userId');
+
+        // Group by proximity and category
+        const duplicates = [];
+        const processed = new Set();
+
+        for (let i = 0; i < issues.length; i++) {
+            if (processed.has(issues[i]._id.toString())) continue;
+
+            // Find nearby issues with same category but different user
+            const nearby = await Issue.find({
+                _id: { $ne: issues[i]._id },
+                cityId,
+                categoryId: issues[i].categoryId._id,
+                status: { $in: ['REPORTED', 'IN_PROGRESS'] },
+                userId: { $ne: issues[i].userId._id },
+                location: {
+                    $near: {
+                        $geometry: issues[i].location,
+                        $maxDistance: 500 // 500 meters
+                    }
+                }
+            }).populate('categoryId userId');
+
+            if (nearby.length > 0) {
+                duplicates.push({
+                    primaryIssue: issues[i],
+                    relatedIssues: nearby,
+                    count: nearby.length + 1,
+                    category: issues[i].categoryId.name,
+                    location: issues[i].location.coordinates
+                });
+
+                processed.add(issues[i]._id.toString());
+                nearby.forEach(n => processed.add(n._id.toString()));
+            }
+        }
+
+        // Sort by count descending
+        duplicates.sort((a, b) => b.count - a.count);
+
+        res.json(duplicates.slice(0, 50)); // Return top 50
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+

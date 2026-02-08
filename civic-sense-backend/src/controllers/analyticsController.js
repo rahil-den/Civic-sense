@@ -175,3 +175,45 @@ export const getHeatmap = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+// GET /api/analytics/comparison
+export const getCityComparison = async (req, res) => {
+    try {
+        const comparison = await Issue.aggregate([
+            {
+                $group: {
+                    _id: "$cityId",
+                    resolved: { $sum: { $cond: [{ $eq: ["$status", "SOLVED"] }, 1, 0] } },
+                    total: { $sum: 1 }
+                }
+            },
+            {
+                $lookup: {
+                    from: "cities",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "cityInfo"
+                }
+            },
+            {
+                $project: {
+                    cityName: { $arrayElemAt: ["$cityInfo.name", 0] },
+                    resolved: 1,
+                    pending: { $subtract: ["$total", "$resolved"] },
+                    total: 1,
+                    resolutionRate: {
+                        $cond: [
+                            { $gt: ["$total", 0] },
+                            { $multiply: [{ $divide: ["$resolved", "$total"] }, 100] },
+                            0
+                        ]
+                    }
+                }
+            },
+            { $sort: { total: -1 } }
+        ]);
+
+        res.json(comparison);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

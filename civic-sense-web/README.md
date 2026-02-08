@@ -1,16 +1,50 @@
-# React + Vite
+# CivicSense Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A government-grade civic operations dashboard built with React, TypeScript, and Tailwind CSS.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Admin Dashboard**: Real-time issue tracking, KPI monitoring, and issue resolution management.
+- **Superadmin Dashboard**: State-wide analytics, hierarchical filtering, and geo-spatial intelligence.
+- **Role-Based Access Control**: Secure routing for verified Admins and Superadmins.
+- **Interactive Maps**: Heatmaps and marker clusters for issue visualization.
+- **Modern UI**: Built with shadcn/ui components, featuring a clean, accessible, and professional design.
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Framework**: React + Vite
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui
+- **State Management**: Redux Toolkit + RTK Query
+- **Charts**: Recharts
+- **Maps**: React Leaflet
+- **Animations**: Tailwind Animate
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1.  **Install Dependencies** (if not already done):
+    ```bash
+    npm install
+    ```
+
+2.  **Run Development Server**:
+    ```bash
+    npm run dev
+    ```
+
+3.  **Access the App**:
+    -   Admin Dashboard: `http://localhost:5173/admin`
+    -   Superadmin Dashboard: `http://localhost:5173/superadmin`
+
+    *Note: The current mock authentication defaults to the `admin` role. To view Superadmin features, update `src/features/auth/authSlice.ts` to set the role to `superadmin`.*
+
+## Project Structure
+
+-   `src/features`: core business logic (dashboard, issues, analytics).
+-   `src/components/ui`: Reusable UI components.
+-   `src/layouts`: Dashboard and page layouts.
+-   `src/services`: API slice and configuration.
+
+## Troubleshooting
+
+-   **Tailwind/PostCSS Errors**: If you encounter `Cannot find module 'tailwindcss'`, ensure dependencies are installed (`npm install -D tailwindcss postcss autoprefixer`) and restart the dev server.

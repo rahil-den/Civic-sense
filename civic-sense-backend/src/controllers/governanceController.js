@@ -119,3 +119,69 @@ export const addCategory = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// POST /api/governance/admin (Create new admin)
+// POST /api/governance/admin (Create new admin)
+export const createAdmin = async (req, res) => {
+    try {
+        const { name, email, password, role, department, assignedCities } = req.body;
+
+        console.log('Creating admin with data:', { name, email, role, department });
+
+        // Validate required fields
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: 'Name, email, and password are required' });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            console.log('User already exists:', email);
+            return res.status(400).json({ message: 'User with this email already exists' });
+        }
+
+        // Create user
+        const newUser = await User.create({
+            name,
+            email,
+            password_hash: password, // Note: In production, this should be hashed
+            role: role || 'ADMIN',
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
+        });
+
+        console.log('User created successfully:', newUser._id);
+
+        // Create AdminMeta if department or cities provided
+        if (department || assignedCities) {
+            await AdminMeta.create({
+                userId: newUser._id,
+                department: department || 'General',
+                assignedCities: assignedCities || [],
+                permissions: ['MANAGE_ISSUES', 'VIEW_ANALYTICS']
+            });
+            console.log('AdminMeta created for user:', newUser._id);
+        }
+
+        // Log action (only if req.user exists)
+        if (req.user && req.user.id) {
+            await logAction(req.user.id, 'CREATE_ADMIN', 'User', newUser._id, { email, role });
+        }
+
+        // Emit socket event
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('adminCreated', { adminId: newUser._id, name, email });
+        }
+
+        // Return user without password
+        const userResponse = newUser.toObject();
+        delete userResponse.password_hash;
+
+        console.log('Admin created successfully, sending response');
+        res.status(201).json(userResponse);
+    } catch (error) {
+        console.error('Error creating admin:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
