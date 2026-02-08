@@ -1,7 +1,3 @@
-// ============================================
-// Urban City - Map Tab (Interactive Map Placeholder)
-// ============================================
-
 import React, { useState, useEffect } from 'react';
 import {
   View,

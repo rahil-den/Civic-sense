@@ -1,7 +1,3 @@
-// ============================================
-// Urban City - Home Tab (Minimal Professional Design)
-// ============================================
-
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,

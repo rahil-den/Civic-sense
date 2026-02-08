@@ -1,7 +1,3 @@
-// ============================================
-// Urban City - Welcome Screen (Auth Entry Point)
-// ============================================
-
 import React, { useState } from 'react';
 import {
     View,

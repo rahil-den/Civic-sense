@@ -1,7 +1,3 @@
-// ============================================
-// Urban City - Sign Up Screen
-// ============================================
-
 import React, { useState } from 'react';
 import {
     View,

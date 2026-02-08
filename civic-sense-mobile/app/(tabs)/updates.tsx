@@ -1,7 +1,3 @@
-// ============================================
-// Urban City - Updates Tab (Modern Design)
-// ============================================
-
 import React, { useState, useCallback } from 'react';
 import {
   View,

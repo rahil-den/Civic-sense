@@ -1,7 +1,3 @@
-// ============================================
-// Urban City - Profile Tab (Full Featured with Tabs)
-// ============================================
-
 import React, { useState } from 'react';
 import {
   View,

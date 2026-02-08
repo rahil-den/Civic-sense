@@ -1,7 +1,3 @@
-// ============================================
-// Civic Sense - Snapshot Tab (Camera)
-// ============================================
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
