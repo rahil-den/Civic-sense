@@ -1,44 +1,80 @@
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
-import { useRouter } from "expo-router";
+// ============================================
+// Civic Sense - Issue Card Component
+// ============================================
 
-export default function IssueCard({ issue }: any) {
-  const router = useRouter();
+import React from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import { getCategoryLabel, getCategoryColor } from '../constants/categories';
+import type { Issue, IssueStatus } from '../types';
+
+interface IssueCardProps {
+  issue: Issue;
+  onPress?: () => void;
+}
+
+const STATUS_CONFIG: Record<IssueStatus, { label: string; bg: string; color: string }> = {
+  reported: { label: 'Reported', bg: COLORS.reportedBg, color: COLORS.reported },
+  in_progress: { label: 'In Progress', bg: COLORS.inProgressBg, color: COLORS.inProgress },
+  solved: { label: 'Solved', bg: COLORS.solvedBg, color: COLORS.solved },
+  completed: { label: 'Completed', bg: COLORS.completedBg, color: COLORS.completed },
+};
+
+// Format date to "X days ago"
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInDays === 0) return 'Today';
+  if (diffInDays === 1) return 'Yesterday';
+  return `${diffInDays} days ago`;
+}
+
+export default function IssueCard({ issue, onPress }: IssueCardProps) {
+  const statusConfig = STATUS_CONFIG[issue.status];
+  const categoryColor = getCategoryColor(issue.category);
 
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => router.push(`/issues/${issue.id}`)}
+      onPress={onPress}
+      activeOpacity={0.7}
     >
-      <Image source={{ uri: issue.image }} style={styles.image} />
+      {/* Image */}
+      <Image source={{ uri: issue.imageUrl }} style={styles.image} />
 
+      {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title}>{issue.title}</Text>
+        <Text style={styles.title} numberOfLines={2}>
+          {issue.title}
+        </Text>
 
-        <Text style={styles.category}>{issue.category}</Text>
+        <Text style={[styles.category, { color: categoryColor }]}>
+          {getCategoryLabel(issue.category)}
+        </Text>
 
         <View style={styles.row}>
-          <Text style={styles.meta}>{issue.distance}</Text>
-          <Text style={styles.meta}>{issue.daysAgo}</Text>
+          {issue.distance && (
+            <Text style={styles.meta}>{issue.distance}</Text>
+          )}
+          <Text style={styles.meta}>{formatTimeAgo(issue.createdAt)}</Text>
         </View>
       </View>
 
+      {/* Status Badge */}
       <View style={styles.statusContainer}>
-        <Text
+        <View
           style={[
-            styles.status,
-            issue.status === "In Progress" && styles.inProgress,
-            issue.status === "Reported" && styles.reported,
-            issue.status === "Resolved" && styles.resolved,
+            styles.statusBadge,
+            { backgroundColor: statusConfig.bg },
           ]}
         >
-          {issue.status}
-        </Text>
+          <Text style={[styles.statusText, { color: statusConfig.color }]}>
+            {statusConfig.label}
+          </Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -46,60 +82,52 @@ export default function IssueCard({ issue }: any) {
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 12,
-    elevation: 2,
+    flexDirection: 'row',
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+    ...SHADOWS.sm,
   },
   image: {
     width: 70,
     height: 70,
-    borderRadius: 10,
-    marginRight: 12,
+    borderRadius: BORDER_RADIUS.md,
+    marginRight: SPACING.md,
   },
   content: {
     flex: 1,
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: 4,
   },
   category: {
-    fontSize: 14,
-    color: "#2563EB",
-    marginVertical: 4,
+    fontSize: FONT_SIZES.md,
+    fontWeight: '500',
+    marginBottom: 4,
   },
   row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   meta: {
-    fontSize: 12,
-    color: "#6B7280",
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textMuted,
   },
   statusContainer: {
-    justifyContent: "center",
+    justifyContent: 'center',
   },
-  status: {
+  statusBadge: {
     paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    fontSize: 12,
-    overflow: "hidden",
+    paddingHorizontal: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
   },
-  inProgress: {
-    backgroundColor: "#DBEAFE",
-    color: "#1D4ED8",
-  },
-  reported: {
-    backgroundColor: "#FEF3C7",
-    color: "#92400E",
-  },
-  resolved: {
-    backgroundColor: "#DCFCE7",
-    color: "#166534",
+  statusText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: '600',
   },
 });

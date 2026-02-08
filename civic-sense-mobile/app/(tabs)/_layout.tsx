@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Tabs } from "expo-router";
 import { Ionicons, MaterialIcons, FontAwesome } from "@expo/vector-icons";
+import { useAppSelector } from "../../store";
 
 const GOV_BLUE = "#3B82F6";
 const INACTIVE_ICON = "#9CA3AF";
@@ -12,27 +13,36 @@ function TabIcon({
   label,
   focused,
   type = "ion",
+  badge,
 }: {
   icon: string;
   label: string;
   focused: boolean;
   type?: "ion" | "fa";
+  badge?: number;
 }) {
   return (
     <View style={styles.tabItem}>
-      {type === "ion" ? (
-        <Ionicons
-          name={icon as any}
-          size={24}
-          color={focused ? GOV_BLUE : INACTIVE_ICON}
-        />
-      ) : (
-        <FontAwesome
-          name={icon as any}
-          size={22}
-          color={focused ? GOV_BLUE : INACTIVE_ICON}
-        />
-      )}
+      <View>
+        {type === "ion" ? (
+          <Ionicons
+            name={icon as any}
+            size={24}
+            color={focused ? GOV_BLUE : INACTIVE_ICON}
+          />
+        ) : (
+          <FontAwesome
+            name={icon as any}
+            size={22}
+            color={focused ? GOV_BLUE : INACTIVE_ICON}
+          />
+        )}
+        {badge !== undefined && badge > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{badge > 9 ? "9+" : String(badge)}</Text>
+          </View>
+        )}
+      </View>
 
       <Text
         style={[
@@ -47,6 +57,8 @@ function TabIcon({
 }
 
 export default function TabLayout() {
+  const { unreadCount } = useAppSelector((state) => state.notification);
+
   return (
     <Tabs
       screenOptions={{
@@ -102,24 +114,25 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-  name="addreport"
-  options={{
-    tabBarButton: ({ onPress, accessibilityState }) => (
-      <Pressable
-        onPress={onPress}
-        accessibilityState={accessibilityState}
-        style={styles.fabWrapper}
-      >
-        <View style={styles.fab}>
-          <MaterialIcons name="add-a-photo" size={30} color="#fff" />
-        </View>
-      </Pressable>
-    ),
-  }}
-/>
+        name="addreport"
+        options={{
+          tabBarStyle: { display: "none" },
+          tabBarButton: ({ onPress, accessibilityState }) => (
+            <Pressable
+              onPress={onPress}
+              accessibilityState={accessibilityState}
+              style={styles.fabWrapper}
+            >
+              <View style={styles.fab}>
+                <MaterialIcons name="add-a-photo" size={30} color="#fff" />
+              </View>
+            </Pressable>
+          ),
+        }}
+      />
 
 
-      {/* Updates */}
+      {/* Updates - with notification badge */}
       <Tabs.Screen
         name="updates"
         options={{
@@ -129,6 +142,7 @@ export default function TabLayout() {
               label="Updates"
               focused={focused}
               type="fa"
+              badge={unreadCount}
             />
           ),
         }}
@@ -167,7 +181,7 @@ const styles = StyleSheet.create({
   },
 
   fabWrapper: {
-    top: -34, // wavy pop-out effect
+    top: -34,
     alignItems: "center",
   },
 
@@ -184,5 +198,24 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 12 },
     shadowRadius: 20,
     elevation: 16,
+  },
+
+  badge: {
+    position: "absolute",
+    top: -4,
+    right: -8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#EF4444",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+  },
+
+  badgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#fff",
   },
 });
