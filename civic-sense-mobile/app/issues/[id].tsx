@@ -45,7 +45,8 @@ export default function IssueDetailScreen() {
     return <LoadingSpinner message="Loading issue details..." fullScreen />;
   }
 
-  const statusConfig = STATUS_CONFIG[issue.status];
+  const statusKey = issue.status.toLowerCase() as IssueStatus;
+  const statusConfig = STATUS_CONFIG[statusKey] || STATUS_CONFIG.reported;
   const categoryColor = getCategoryColor(issue.category);
 
   return (

@@ -11,7 +11,13 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        let token = localStorage.getItem('token');
+
+        // In development, fallback to mock token if no real token exists
+        if (!token && process.env.NODE_ENV === 'development') {
+            token = 'mock-jwt-token';
+        }
+
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }

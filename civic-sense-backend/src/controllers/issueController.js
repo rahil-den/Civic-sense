@@ -117,33 +117,50 @@ export const updateStatus = async (req, res) => {
         issue.status = status;
         await issue.save();
 
-        await IssueStatusHistory.create({
-            issueId: issue._id,
-            oldStatus: oldStatus,
-            newStatus: status,
-            changedBy: req.user.id || req.user._id,
-            remarks
-        });
+        try {
+            // Safe helper for ID
+            const actorId = req.user._id ? req.user._id : (req.user.id && req.user.id.length === 24 ? req.user.id : null);
 
-        await CommunityFeed.create({
-            issueId: issue._id,
-            eventType: 'UPDATED',
-            message: `Issue status updated to ${status}`
-        });
+            // Only create history/log if we have a valid ID or if we decide to allow invalid IDs (which we shouldn't for ObjectId fields)
+            // If actorId is null (e.g. mock user with non-ObjectId), we might skip history changedBy or use a placeholder if the schema allowed string.
+            // But Schema says ObjectId. So we must pass valid ObjectId or null.
 
-        await logAction(req.user.id, 'UPDATE_STATUS', 'Issue', issue._id, { oldStatus, newStatus: status });
+            await IssueStatusHistory.create({
+                issueId: issue._id,
+                oldStatus: oldStatus,
+                newStatus: status,
+                changedBy: actorId, // Pass null if invalid/mock
+                remarks
+            });
 
-        // Invalidate Cache
-        await invalidateCache(issue.cityId, issue.stateId);
+            await CommunityFeed.create({
+                issueId: issue._id,
+                eventType: 'UPDATED',
+                message: `Issue status updated to ${status}`
+            });
 
-        // Emit Socket Event
-        const io = req.app.get('io');
-        if (io) {
-            io.emit('issueUpdated', { issueId: issue._id, status });
-            io.emit('analyticsUpdated', { cityId: issue.cityId });
+            // Safe log action
+            if (actorId) {
+                await logAction(actorId, 'UPDATE_STATUS', 'Issue', issue._id, { oldStatus, newStatus: status });
+            }
+
+            // Invalidate Cache
+            await invalidateCache(issue.cityId, issue.stateId);
+
+            // Emit Socket Event
+            const io = req.app.get('io');
+            if (io) {
+                io.emit('issueUpdated', { issueId: issue._id, status });
+                io.emit('analyticsUpdated', { cityId: issue.cityId });
+            }
+        } catch (postUpdateError) {
+            console.error('Post-update error in issueController:', postUpdateError);
+            // Don't fail the request since issue is already updated
         }
 
-        res.json(issue);
+        if (!res.headersSent) {
+            res.json({ success: true, issue });
+        }
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

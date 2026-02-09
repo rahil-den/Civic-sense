@@ -33,7 +33,8 @@ function formatTimeAgo(dateString: string): string {
 }
 
 export default function IssueCard({ issue, onPress }: IssueCardProps) {
-  const statusConfig = STATUS_CONFIG[issue.status];
+  const statusKey = issue.status.toLowerCase() as IssueStatus;
+  const statusConfig = STATUS_CONFIG[statusKey] || STATUS_CONFIG.reported;
   const categoryColor = getCategoryColor(issue.category);
 
   return (

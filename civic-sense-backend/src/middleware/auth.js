@@ -10,8 +10,15 @@ export const verifyToken = async (req, res, next) => {
         try {
             token = req.headers.authorization.split(' ')[1];
 
+            console.log('VerifyToken Debug:', {
+                nodeEnv: process.env.NODE_ENV,
+                tokenSnippet: token ? token.substring(0, 20) : 'none',
+                isMock: token === 'mock-jwt-token' || (token && token.startsWith('mock-'))
+            });
+
             // Legacy/Mock support
-            if (process.env.NODE_ENV === 'development' && (token === 'mock-jwt-token' || token.startsWith('mock-'))) {
+            if ((process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) && (token === 'mock-jwt-token' || token.startsWith('mock-'))) {
+                console.log('Using mock token authentication');
                 req.user = {
                     id: 'mock_admin_id_123',
                     role: req.headers['x-mock-role'] || 'admin', // default to admin for mock
@@ -25,6 +32,7 @@ export const verifyToken = async (req, res, next) => {
             req.user = await User.findById(decoded.id).select('-password_hash');
 
             if (!req.user) {
+                console.log('User not found for ID:', decoded.id);
                 return res.status(401).json({ message: 'Not authorized, user not found' });
             }
 

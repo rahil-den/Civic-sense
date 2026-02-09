@@ -23,6 +23,11 @@ import { rateLimiter } from './middleware/rateLimiter.js';
 // Load env vars
 dotenv.config();
 
+// Default to development if not set
+if (!process.env.NODE_ENV) {
+    process.env.NODE_ENV = 'development';
+}
+
 // Connect to Database
 connectDB();
 
@@ -51,7 +56,8 @@ const io = new Server(httpServer, {
 // Make io accessible globally via app
 app.set('io', io);
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Basic health check
 app.get('/', (req, res) => {

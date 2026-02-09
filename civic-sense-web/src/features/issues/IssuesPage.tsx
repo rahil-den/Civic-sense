@@ -91,7 +91,7 @@ export const IssuesPage = () => {
                         status === 'in_progress' ? 'IN_PROGRESS' :
                             status.toUpperCase();
 
-                await api.patch(`/issues/${id}/status`, {
+                await api.put(`/issues/${id}/status`, {
                     status: backendStatus,
                     remarks
                 });
