@@ -21,6 +21,8 @@ import { AreaAnalytics } from './features/analytics/AreaAnalytics';
 import { Heatmaps } from './features/analytics/Heatmaps';
 import { AuthRedirect } from './components/auth/AuthRedirect';
 import { ImportantIssuesPage } from './features/issues/ImportantIssuesPage';
+import { UsersList } from './features/users/UsersList';
+import { Toaster } from 'sonner';
 
 
 
@@ -66,6 +68,7 @@ function App() {
                     }
                 >
                     <Route index element={<AdminDashboard />} />
+                    <Route path="users" element={<UsersList />} />
                     <Route path="issues" element={<IssuesPage />} />
                     <Route path="important" element={<ImportantIssuesPage />} />
                     <Route path="map" element={<AdminMapView />} />
@@ -98,6 +101,7 @@ function App() {
                 {/* Catch all - Redirect to root for intelligent routing */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            <Toaster />
         </BrowserRouter>
     );
 }

@@ -13,9 +13,37 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+
+let MapView: any;
+let Marker: any;
+let Callout: any;
+
+if (Platform.OS !== 'web') {
+  try {
+    const Maps = require('react-native-maps');
+    MapView = Maps.default;
+    Marker = Maps.Marker;
+    Callout = Maps.Callout;
+  } catch (e) {
+    console.warn('Maps not loaded:', e);
+    MapView = View;
+    Marker = View;
+    Callout = View;
+  }
+} else {
+  // Web fallback
+  MapView = (props: any) => (
+    <View style={[props.style, { backgroundColor: '#e1e1e1', alignItems: 'center', justifyContent: 'center' }]}>
+      <Text>Maps are not supported on Web</Text>
+    </View>
+  );
+  Marker = View;
+  Callout = View;
+}
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '../../store';
+import { useGetNearbyIssuesQuery } from '../../services/issueApi';
 import {
   setUserLocation,
   setLocationPermission,
@@ -41,7 +69,15 @@ export default function MapScreen() {
   const dispatch = useAppDispatch();
   const { userLocation, hasLocationPermission, isLocationLoading, selectedCategories } =
     useAppSelector((state) => state.map);
-  const { issues } = useAppSelector((state) => state.issue);
+
+  const { data: issues = [] } = useGetNearbyIssuesQuery(
+    {
+      latitude: userLocation?.latitude || 0,
+      longitude: userLocation?.longitude || 0
+    },
+    { skip: !userLocation }
+  );
+
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   useEffect(() => {
@@ -146,43 +182,48 @@ export default function MapScreen() {
         </View>
       </View>
 
-      {/* Map Placeholder (Expo Go doesn't support native maps) */}
+      {/* Real Map View */}
       <View style={styles.mapContainer}>
-        {/* Styled Map Background */}
-        <View style={styles.mapBackground}>
-          {/* Grid pattern overlay */}
-          <View style={styles.gridOverlay}>
-            {[...Array(5)].map((_, i) => (
-              <View key={`h${i}`} style={[styles.gridLineH, { top: `${20 * (i + 1)}%` }]} />
+        {userLocation ? (
+          <MapView
+            style={styles.map}
+            initialRegion={{
+              latitude: userLocation.latitude,
+              longitude: userLocation.longitude,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            showsUserLocation
+            showsMyLocationButton={false} // We use our custom button
+          >
+            {filteredIssues.map((issue) => (
+              <Marker
+                key={issue.id}
+                coordinate={{
+                  latitude: issue.location.latitude,
+                  longitude: issue.location.longitude,
+                }}
+                title={issue.title}
+                description={getCategoryLabel(issue.category)}
+                onCalloutPress={() => handleIssuePress(issue)}
+                pinColor={getCategoryColor(issue.category)}
+              >
+                <Callout tooltip>
+                  <View style={styles.calloutContainer}>
+                    <Text style={styles.calloutTitle}>{issue.title}</Text>
+                    <Text style={styles.calloutCategory}>{getCategoryLabel(issue.category)}</Text>
+                    <View style={[styles.statusDot, { backgroundColor: getStatusColor(issue.status), marginTop: 4 }]} />
+                  </View>
+                </Callout>
+              </Marker>
             ))}
-            {[...Array(4)].map((_, i) => (
-              <View key={`v${i}`} style={[styles.gridLineV, { left: `${25 * (i + 1)}%` }]} />
-            ))}
+          </MapView>
+        ) : (
+          <View style={styles.mapLoading}>
+            <LoadingSpinner />
+            <Text style={styles.mapLoadingText}>Locating you...</Text>
           </View>
-
-          {/* Center marker */}
-          <View style={styles.centerMarker}>
-            <Ionicons name="location" size={40} color={COLORS.primary} />
-          </View>
-
-          {/* Map markers */}
-          {DUMMY_MARKERS.map((marker, idx) => (
-            <View
-              key={marker.id}
-              style={[
-                styles.mapMarker,
-                {
-                  top: `${20 + idx * 15}%`,
-                  left: `${15 + idx * 20}%`,
-                }
-              ]}
-            >
-              <View style={[styles.markerPin, { backgroundColor: getCategoryColor(marker.category as any) }]}>
-                <Ionicons name="alert-circle" size={14} color="#fff" />
-              </View>
-            </View>
-          ))}
-        </View>
+        )}
 
         {/* Map Overlay Info */}
         <View style={styles.mapInfoOverlay}>
@@ -352,6 +393,37 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#E8F4FD',
     ...SHADOWS.md,
+  },
+  map: {
+    width: '100%',
+    height: '100%',
+  },
+  mapLoading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapLoadingText: {
+    marginTop: 10,
+    color: COLORS.textMuted,
+    fontSize: 14,
+  },
+  calloutContainer: {
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 8,
+    minWidth: 150,
+    alignItems: 'center',
+    ...SHADOWS.md,
+  },
+  calloutTitle: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  calloutCategory: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
   },
   mapBackground: {
     flex: 1,

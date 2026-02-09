@@ -16,10 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppSelector, useAppDispatch } from '../../store';
 import {
-  setNotifications,
   markAsRead,
   markAllAsRead,
 } from '../../store/slices/notificationSlice';
+import { useGetNotificationsQuery } from '../../services/notificationApi';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import EmptyState from '../../components/ui/EmptyState';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
@@ -86,9 +86,11 @@ function formatTimeAgo(dateString: string): string {
 
 export default function UpdatesScreen() {
   const dispatch = useAppDispatch();
-  const { notifications, unreadCount, isLoading } = useAppSelector(
-    (state) => state.notification
-  );
+  // const { notifications, unreadCount, isLoading } = useAppSelector((state) => state.notification);
+  const { data: notifications = [], isLoading, refetch } = useGetNotificationsQuery();
+
+  // Calculate unread count globally if needed, or just locally
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -100,17 +102,13 @@ export default function UpdatesScreen() {
     }
   }, []);
 
-  React.useEffect(() => {
-    if (notifications.length === 0) {
-      dispatch(setNotifications(MOCK_NOTIFICATIONS));
-    }
-  }, []);
+  // Removed useEffect for mock data
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await refetch();
     setRefreshing(false);
-  }, []);
+  }, [refetch]);
 
   const handleNotificationPress = (notification: Notification) => {
     // Toggle expanded state with animation

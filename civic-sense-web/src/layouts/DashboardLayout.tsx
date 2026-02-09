@@ -54,6 +54,7 @@ export const DashboardLayout = () => {
 
     const adminLinks = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+        { icon: Users, label: 'User Management', path: '/admin/users' },
         { icon: FileWarning, label: 'Issue Management', path: '/admin/issues' },
         { icon: AlertTriangle, label: 'Important Issues', path: '/admin/important' },
         { icon: Map, label: 'Map View', path: '/admin/map' },

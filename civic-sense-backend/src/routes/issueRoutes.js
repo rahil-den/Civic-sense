@@ -1,9 +1,10 @@
 import express from 'express';
-import { createIssue, getIssues, getIssueById, updateStatus, resolveIssue, getDuplicateIssues } from '../controllers/issueController.js';
+import { createIssue, getIssues, getIssueById, updateStatus, resolveIssue, getDuplicateIssues, getCategories } from '../controllers/issueController.js';
 import { verifyToken, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
+router.get('/categories', getCategories);
 router.post('/', verifyToken, createIssue);
 router.get('/', verifyToken, getIssues);
 router.get('/:id', verifyToken, getIssueById);

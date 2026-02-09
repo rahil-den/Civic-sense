@@ -6,7 +6,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { RootState } from '../store';
 
 // TODO: Update this to your actual backend URL
-const API_BASE_URL = 'https://api.civicsense.example.com/api';
+export const API_BASE_URL = process.env.API_BASE_URL_MAIN || 'http://192.168.1.8:3000/api';
 
 export const api = createApi({
     reducerPath: 'api',

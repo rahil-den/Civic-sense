@@ -13,14 +13,17 @@ import {
   StatusBar,
   ActivityIndicator,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import { StorageService } from '../../services/storageService';
 import { useAppSelector, useAppDispatch } from '../../store';
 import { logout } from '../../store/slices/authSlice';
 import { socketService } from '../../services/socketService';
+import { useGetUserIssuesQuery } from '../../services/issueApi';
 import EmptyState from '../../components/ui/EmptyState';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
 import type { Issue } from '../../types';
@@ -42,7 +45,8 @@ const ISSUE_CATEGORIES = [
 export default function ProfileScreen() {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const { issues } = useAppSelector((state) => state.issue);
+  // const { issues } = useAppSelector((state) => state.issue);
+  const { data: userIssues = [], isLoading } = useGetUserIssuesQuery();
 
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [showEditModal, setShowEditModal] = useState(false);
@@ -55,7 +59,7 @@ export default function ProfileScreen() {
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [locationServices, setLocationServices] = useState(true);
 
-  const userIssues = issues.filter((issue) => issue.userId === '1');
+  // const userIssues = issues.filter((issue) => issue.userId === '1'); // Replaced by query
   const stats = {
     total: userIssues.length,
     resolved: userIssues.filter((i) => i.status === 'solved' || i.status === 'completed').length,
@@ -79,21 +83,29 @@ export default function ProfileScreen() {
     setShowEditModal(false);
   };
 
+  const performLogout = async () => {
+    await StorageService.removeItem('authToken');
+    await StorageService.removeItem('user');
+    socketService.disconnect();
+    dispatch(logout());
+    router.replace('/auth/welcome');
+  };
+
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          await SecureStore.deleteItemAsync('authToken');
-          await SecureStore.deleteItemAsync('user');
-          socketService.disconnect();
-          dispatch(logout());
-          router.replace('/auth/login');
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to logout?')) {
+        performLogout();
+      }
+    } else {
+      Alert.alert('Logout', 'Are you sure you want to logout?', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: performLogout,
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   const handleDeleteAccount = () => {

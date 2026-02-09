@@ -1,34 +1,40 @@
-// Mock JWT verification for foundation
-// In production, use jsonwebtoken library to verify actual tokens
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
-export const verifyToken = (req, res, next) => {
-    const authHeader = req.headers.authorization;
+const JWT_SECRET = process.env.JWT_SECRET || 'civic_sense_secret_key_123';
 
-    if (authHeader) {
-        // Imitate decoding - normally verify(token, secret)
-        // For development/foundation without frontend auth yet, we allow a bypass 
-        // OR checks for a specific "mock" token
+export const verifyToken = async (req, res, next) => {
+    let token;
 
-        // Mock User payload
-        // You can change role here to test different permissions
-        req.user = {
-            id: 'mock_admin_id_123',
-            email: 'admin@civic.com',
-            role: req.headers['x-mock-role'] || 'ADMIN', // Allow simulation via header
-            department: 'Health',
-            cityAccess: ['New York', 'Los Angeles']
-        };
-        next();
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        try {
+            token = req.headers.authorization.split(' ')[1];
+
+            // Legacy/Mock support
+            if (process.env.NODE_ENV === 'development' && (token === 'mock-jwt-token' || token.startsWith('mock-'))) {
+                req.user = {
+                    id: 'mock_admin_id_123',
+                    role: req.headers['x-mock-role'] || 'admin', // default to admin for mock
+                    email: 'mock@civic.com'
+                };
+                return next();
+            }
+
+            const decoded = jwt.verify(token, JWT_SECRET);
+
+            req.user = await User.findById(decoded.id).select('-password_hash');
+
+            if (!req.user) {
+                return res.status(401).json({ message: 'Not authorized, user not found' });
+            }
+
+            next();
+        } catch (error) {
+            console.error('Auth error:', error.message);
+            res.status(401).json({ message: 'Not authorized, token failed' });
+        }
     } else {
-        // Allow mock role simulation even without Authorization header for easier testing
-        const mockRole = req.headers['x-mock-role'];
-
-        req.user = {
-            id: mockRole ? 'mock_admin_id_123' : 'guest_id',
-            role: mockRole || 'GUEST',
-            email: mockRole ? 'admin@civic.com' : undefined
-        };
-        next();
+        res.status(401).json({ message: 'Not authorized, no token' });
     }
 };
 

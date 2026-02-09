@@ -17,7 +17,9 @@ import EmptyState from '../../components/ui/EmptyState';
 import ErrorState from '../../components/ui/ErrorState';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
 import { useAppSelector, useAppDispatch } from '../../store';
-import { setIssues } from '../../store/slices/issueSlice';
+// import { setIssues } from '../../store/slices/issueSlice';
+// import type { Issue, IssueStatus } from '../../types'; // Already imported above or merge imports if needed.
+// Actually line 21 handles imports. Check lines 19-22. 
 import type { Issue, IssueStatus } from '../../types';
 
 // Mock data for development
@@ -78,20 +80,18 @@ const MOCK_ISSUES: Issue[] = [
 
 type FilterType = 'all' | 'reported' | 'in_progress' | 'solved';
 
+import { useGetIssuesQuery } from '../../services/issueApi';
+
+// ... (MOCK_ISSUES removal or comment out)
+
 export default function HomeScreen() {
-  const dispatch = useAppDispatch();
-  const { issues, isLoading, error } = useAppSelector(
-    (state) => state.issue
-  );
+  // const dispatch = useAppDispatch(); // No longer needed for fetching
+  const { data: issues = [], isLoading, error, refetch } = useGetIssuesQuery({});
 
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (issues.length === 0) {
-      dispatch(setIssues(MOCK_ISSUES));
-    }
-  }, []);
+  // Removed useEffect for mock data
 
   // Filter issues
   const filteredIssues = activeFilter === 'all'
@@ -100,9 +100,9 @@ export default function HomeScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await refetch();
     setRefreshing(false);
-  }, []);
+  }, [refetch]);
 
   const handleIssuePress = (issue: Issue) => {
     router.push({ pathname: '/issue-detail', params: { id: issue.id } });
@@ -115,8 +115,8 @@ export default function HomeScreen() {
   if (error && issues.length === 0) {
     return (
       <ErrorState
-        message={error}
-        onRetry={() => dispatch(setIssues(MOCK_ISSUES))}
+        message={error ? 'Failed to load issues' : 'Unknown error'}
+        onRetry={refetch}
       />
     );
   }

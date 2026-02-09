@@ -5,9 +5,9 @@ import { addNotification } from '../store/slices/notificationSlice';
 import type { Issue, Notification } from '../types';
 
 // TODO: Update this to your actual backend URL
-const SOCKET_URL = 'https://api.civicsense.example.com';
+const SOCKET_URL = 'http://192.168.1.8:3000';
 // Set to true when you have a real backend server
-const SOCKET_ENABLED = false;
+const SOCKET_ENABLED = true;
 
 class SocketService {
     private socket: Socket | null = null;

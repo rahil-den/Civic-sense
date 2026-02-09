@@ -70,6 +70,7 @@ export const getIssues = async (req, res) => {
         if (status) query.status = status;
         if (categoryId) query.categoryId = categoryId;
         if (userId) query.userId = userId;
+        if (req.query.mine === 'true') query.userId = req.user.id || req.user._id;
 
         const issues = await Issue.find(query)
             .populate('userId', 'name avatar')
@@ -259,3 +260,22 @@ export const getDuplicateIssues = async (req, res) => {
     }
 };
 
+// Get Issue Categories
+export const getCategories = async (req, res) => {
+    try {
+        const categories = await IssueCategory.find();
+        res.json(categories);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export default {
+    createIssue,
+    getIssues,
+    getIssueById,
+    updateStatus,
+    resolveIssue,
+    getDuplicateIssues,
+    getCategories
+};

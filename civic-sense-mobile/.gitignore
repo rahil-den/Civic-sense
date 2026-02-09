@@ -44,3 +44,6 @@ app-example
 .expo 
 .vscode/
 assets/
+
+#.env
+.env

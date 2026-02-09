@@ -7,10 +7,35 @@ import {
   Image,
   Alert,
   Modal,
+  Dimensions,
+  Platform, // Added Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
+// Conditionally load MapView
+let MapView: any;
+let Marker: any;
+
+if (Platform.OS !== 'web') {
+  try {
+    const Maps = require('react-native-maps');
+    MapView = Maps.default;
+    Marker = Maps.Marker;
+  } catch (e) {
+    console.warn('Maps not loaded:', e);
+    MapView = View;
+    Marker = View;
+  }
+} else {
+  // Web fallback
+  MapView = (props: any) => (
+    <View style={[props.style, { backgroundColor: '#e1e1e1', alignItems: 'center', justifyContent: 'center' }]}>
+      <Text>Maps are not supported on Web</Text>
+    </View>
+  );
+  Marker = View;
+}
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -37,6 +62,10 @@ export default function SnapshotScreen() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // Map for adjusting location
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [tempLocation, setTempLocation] = useState<LocationData | null>(null);
 
   useEffect(() => {
     getLocation();
@@ -162,6 +191,47 @@ export default function SnapshotScreen() {
     setFacing((current) => (current === 'back' ? 'front' : 'back'));
   };
 
+  // --- Map Adjustment Logic ---
+
+  const handleAdjustLocation = () => {
+    if (location) {
+      setTempLocation({ ...location });
+      setShowMapModal(true);
+    } else {
+      getLocation().then(() => {
+        // Maybe wait? but user can just wait on camera screen
+        Alert.alert('Location not ready', 'Please wait for location detection.');
+      });
+    }
+  };
+
+  const handleMapConfirm = async () => {
+    if (tempLocation) {
+      // Reverse geocode the new location
+      let newAddress = tempLocation.address;
+      try {
+        // Only if address is empty or we want to update it (let's update it)
+        const [geocode] = await Location.reverseGeocodeAsync({
+          latitude: tempLocation.latitude,
+          longitude: tempLocation.longitude,
+        });
+        if (geocode) {
+          newAddress = [geocode.street, geocode.city, geocode.region]
+            .filter(Boolean)
+            .join(', ');
+        }
+      } catch (e) {
+        console.log('Reverse geocode failed', e);
+      }
+
+      setLocation({
+        ...tempLocation,
+        address: newAddress
+      });
+      setShowMapModal(false);
+    }
+  };
+
   // Permission not determined yet
   if (!permission) {
     return <LoadingSpinner message="Checking camera access..." fullScreen />;
@@ -252,12 +322,17 @@ export default function SnapshotScreen() {
           {/* Overlay */}
           <View style={styles.modalOverlay}>
             <SafeAreaView style={styles.modalContent}>
-              {/* Location Badge */}
-              <View style={styles.modalLocationBadge}>
-                <Ionicons name="location" size={16} color={COLORS.primary} />
-                <Text style={styles.modalLocationText} numberOfLines={1}>
-                  {location?.address || 'Location detected'}
-                </Text>
+              {/* Location Badge with Edit Button */}
+              <View style={styles.locationEditRow}>
+                <View style={styles.modalLocationBadge}>
+                  <Ionicons name="location" size={16} color={COLORS.primary} />
+                  <Text style={styles.modalLocationText} numberOfLines={1}>
+                    {location?.address || 'Location detected'}
+                  </Text>
+                </View>
+                <TouchableOpacity style={styles.editLocationBtn} onPress={handleAdjustLocation}>
+                  <Text style={styles.editLocationText}>Adjust</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Question */}
@@ -287,6 +362,57 @@ export default function SnapshotScreen() {
                 </View>
               </View>
             </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Map Adjustment Modal */}
+      <Modal
+        visible={showMapModal}
+        animationType="slide"
+        transparent={false}
+      >
+        <View style={styles.mapModalContainer}>
+          <View style={styles.mapHeader}>
+            <TouchableOpacity onPress={() => setShowMapModal(false)} style={styles.closeMapBtn}>
+              <Ionicons name="close" size={24} color="black" />
+            </TouchableOpacity>
+            <Text style={styles.mapHeaderTitle}>Set Location</Text>
+            <TouchableOpacity onPress={handleMapConfirm} style={styles.confirmMapTopBtn}>
+              <Text style={styles.confirmMapTopText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+
+          {tempLocation && (
+            <MapView
+              style={styles.map}
+              initialRegion={{
+                latitude: tempLocation.latitude,
+                longitude: tempLocation.longitude,
+                latitudeDelta: 0.005,
+                longitudeDelta: 0.005,
+              }}
+            >
+              <Marker
+                coordinate={{
+                  latitude: tempLocation.latitude,
+                  longitude: tempLocation.longitude,
+                }}
+                draggable
+                onDragEnd={(e: any) => {
+                  setTempLocation({
+                    ...tempLocation,
+                    latitude: e.nativeEvent.coordinate.latitude,
+                    longitude: e.nativeEvent.coordinate.longitude,
+                  });
+                }}
+              />
+            </MapView>
+          )}
+
+          <View style={styles.mapFooter}>
+            <Text style={styles.dragHint}>Drag the marker to pinpoint location</Text>
+            <Button title="Confirm Location" onPress={handleMapConfirm} fullWidth />
           </View>
         </View>
       </Modal>
@@ -441,16 +567,34 @@ const styles = StyleSheet.create({
   modalContent: {
     padding: SPACING.lg,
   },
-  modalLocationBadge: {
+  locationEditRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+    gap: 10,
+  },
+  modalLocationBadge: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.surface,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
     borderRadius: BORDER_RADIUS.full,
-    marginBottom: SPACING.lg,
     ...SHADOWS.md,
+  },
+  editLocationBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.full,
+    ...SHADOWS.md,
+  },
+  editLocationText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: FONT_SIZES.sm,
   },
   modalLocationText: {
     marginLeft: SPACING.xs,
@@ -510,5 +654,51 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.lg,
     fontWeight: '600',
     color: '#fff',
+  },
+  // Map Modal Styles
+  mapModalContainer: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  mapHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 50, // Safe area
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  closeMapBtn: {
+    padding: 5,
+  },
+  mapHeaderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  confirmMapTopBtn: {
+    padding: 5,
+  },
+  confirmMapTopText: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  map: {
+    flex: 1,
+  },
+  mapFooter: {
+    padding: 20,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  dragHint: {
+    textAlign: 'center',
+    color: COLORS.textMuted,
+    marginBottom: 10,
+    fontSize: 14,
   },
 });

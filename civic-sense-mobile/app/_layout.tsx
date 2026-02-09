@@ -3,27 +3,31 @@
 // ============================================
 
 import React, { useEffect, useState } from 'react';
-import { Stack, Slot } from 'expo-router';
+import { Stack, Slot, useSegments, router } from 'expo-router';
 import { Provider } from 'react-redux';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
-import { store, useAppDispatch } from '../store';
+// import * as SecureStore from 'expo-secure-store';
+import { StorageService } from '../services/storageService';
+import { store, useAppDispatch, useAppSelector } from '../store';
 import { loginSuccess } from '../store/slices/authSlice';
 import { socketService } from '../services/socketService';
 import { COLORS } from '../constants/theme';
 
 function RootLayoutContent() {
   const dispatch = useAppDispatch();
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const segments = useSegments();
   const [isLoading, setIsLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     checkAuth();
   }, []);
 
   const checkAuth = async () => {
     try {
-      const token = await SecureStore.getItemAsync('authToken');
-      const userStr = await SecureStore.getItemAsync('user');
+      const token = await StorageService.getItem('authToken');
+      const userStr = await StorageService.getItem('user');
 
       if (token && userStr) {
         const user = JSON.parse(userStr);
@@ -36,8 +40,23 @@ function RootLayoutContent() {
       console.error('Auth check failed:', error);
     } finally {
       setIsLoading(false);
+      setIsReady(true);
     }
   };
+
+  useEffect(() => {
+    if (!isReady || !segments) return;
+
+    const inAuthGroup = segments[0] === 'auth';
+
+    if (!isAuthenticated && !inAuthGroup) {
+      // Redirect to welcome screen if not authenticated
+      router.replace('/auth/welcome');
+    } else if (isAuthenticated && inAuthGroup) {
+      // Redirect to tabs if already authenticated
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated, segments, isReady]);
 
   if (isLoading) {
     return (

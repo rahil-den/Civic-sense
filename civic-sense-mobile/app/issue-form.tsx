@@ -2,7 +2,7 @@
 // Civic Sense - Issue Form Screen
 // ============================================
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -21,9 +21,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { useAppDispatch } from '../store';
-import { addIssue } from '../store/slices/issueSlice';
+// import { addIssue } from '../store/slices/issueSlice';
+import { useCreateIssueMutation, useGetIssueCategoriesQuery } from '../services/issueApi';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
-import { CATEGORIES } from '../constants/categories';
+// import { CATEGORIES } from '../constants/categories';
 import type { IssueCategory, Issue } from '../types';
 
 export default function IssueFormScreen() {
@@ -36,12 +37,21 @@ export default function IssueFormScreen() {
         address: string;
     }>();
 
-    const [category, setCategory] = useState<IssueCategory>('pothole');
+    const [createIssue, { isLoading: isSubmitting }] = useCreateIssueMutation();
+    const { data: categories = [] } = useGetIssueCategoriesQuery();
+
+    const [category, setCategory] = useState<string>(''); // Use ID or slug
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [exactLocation, setExactLocation] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
+
+    // Set default category when loaded
+    useEffect(() => {
+        if (categories.length > 0 && !category) {
+            setCategory(categories[0]._id || categories[0].id);
+        }
+    }, [categories]);
 
     const validate = (): boolean => {
         const newErrors: { title?: string; description?: string } = {};
@@ -66,31 +76,17 @@ export default function IssueFormScreen() {
         if (!validate()) return;
 
         try {
-            setIsSubmitting(true);
-
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1500));
-
-            // Create new issue
-            const newIssue: Issue = {
-                id: Date.now().toString(),
+            await createIssue({
                 title: title.trim(),
                 description: description.trim(),
-                category,
-                status: 'reported',
-                imageUrl: params.imageUri,
+                category: category, // This should be the ID
+                imageUrl: `data:image/jpeg;base64,${params.imageBase64}`,
                 location: {
                     latitude: parseFloat(params.latitude),
                     longitude: parseFloat(params.longitude),
                     address: exactLocation.trim() || params.address,
                 },
-                userId: '1', // Current user
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            };
-
-            // Add to Redux store
-            dispatch(addIssue(newIssue));
+            }).unwrap();
 
             // Show success
             Alert.alert(
@@ -104,9 +100,8 @@ export default function IssueFormScreen() {
                 ]
             );
         } catch (error) {
+            console.error('Submission error:', error);
             Alert.alert('Error', 'Failed to submit your report. Please try again.');
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
@@ -172,11 +167,11 @@ export default function IssueFormScreen() {
                                 onValueChange={(value) => setCategory(value)}
                                 style={styles.picker}
                             >
-                                {CATEGORIES.map((cat) => (
+                                {categories.map((cat: any) => (
                                     <Picker.Item
-                                        key={cat.id}
-                                        label={cat.label}
-                                        value={cat.id}
+                                        key={cat._id || cat.id}
+                                        label={cat.name || cat.label}
+                                        value={cat._id || cat.id}
                                     />
                                 ))}
                             </Picker>

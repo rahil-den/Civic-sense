@@ -22,17 +22,35 @@ import { useAppSelector } from '../store';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import { getCategoryLabel, getCategoryColor } from '../constants/categories';
 
+import { useGetIssueByIdQuery } from '../services/issueApi';
+
 const { width } = Dimensions.get('window');
 
 export default function IssueDetailScreen() {
     const params = useLocalSearchParams();
+    const id = params.id as string;
     const { issues } = useAppSelector((state) => state.issue);
     const [isDownloading, setIsDownloading] = useState(false);
     const [activeImageTab, setActiveImageTab] = useState<'before' | 'after'>('before');
 
-    const issue = issues.find((i) => i.id === params.id);
+    // 1. Try to find in Redux store (instant load)
+    const localIssue = issues.find((i) => i.id === id);
 
-    if (!issue) {
+    // 2. Fetch from API (fresh data / fallback)
+    const { data: fetchedIssue, isLoading, error } = useGetIssueByIdQuery(id);
+
+    // 3. Determine which issue data to use
+    const issue = fetchedIssue || localIssue;
+
+    if (isLoading && !issue) {
+        return (
+            <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+            </SafeAreaView>
+        );
+    }
+
+    if (!issue || error) {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.notFound}>

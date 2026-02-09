@@ -9,14 +9,27 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { StorageService } from '../../services/storageService';
 import { useAppDispatch } from '../../store';
 import { loginSuccess, setLoading } from '../../store/slices/authSlice';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
+import { api, API_BASE_URL } from '../../services/api';
+
+WebBrowser.maybeCompleteAuthSession();
+
+// Placeholder Client IDs - User must replace these
+const GOOGLE_WEB_CLIENT_ID = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_IOS_CLIENT_ID = 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_ANDROID_CLIENT_ID = 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com';
+
+const { width, height } = Dimensions.get('window');
 
 export default function SignUpScreen() {
     const dispatch = useAppDispatch();
@@ -29,6 +42,53 @@ export default function SignUpScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showSplash, setShowSplash] = useState(false);
+
+    const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+        clientId: GOOGLE_WEB_CLIENT_ID,
+        iosClientId: GOOGLE_IOS_CLIENT_ID,
+        androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+    });
+
+    React.useEffect(() => {
+        if (response?.type === 'success') {
+            const { id_token } = response.params;
+            handleBackendGoogleLogin(id_token);
+        } else if (response?.type === 'error') {
+            alert('Google Sign-In failed');
+        }
+    }, [response]);
+
+    const handleBackendGoogleLogin = async (idToken: string) => {
+        try {
+            setIsLoading(true);
+            const API_URL = 'http://192.168.1.8:3000/api/auth/google';
+
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.message || 'Login failed');
+
+            await StorageService.setItem('authToken', data.token);
+            await StorageService.setItem('user', JSON.stringify(data));
+            dispatch(loginSuccess({ user: data, token: data.token }));
+
+            setIsLoading(false);
+            setShowSplash(true);
+
+            setTimeout(() => {
+                router.replace('/(tabs)');
+            }, 2500);
+        } catch (error: any) {
+            console.error('Login error:', error);
+            setIsLoading(false);
+            alert(error.message || 'Failed to authenticate with backend');
+        }
+    };
 
     const validateInputs = () => {
         if (!name.trim()) {
@@ -62,25 +122,24 @@ export default function SignUpScreen() {
             setError(null);
             dispatch(setLoading(true));
 
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            const API_URL = `${API_BASE_URL}/auth/register`;
 
-            // Mock user data
-            const mockUser = {
-                id: Date.now().toString(),
-                name: name.trim(),
-                email: email.trim(),
-                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=2563EB&color=fff`,
-                createdAt: new Date().toISOString(),
-            };
-            const mockToken = 'mock-jwt-token-' + Date.now();
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name.trim(), email: email.trim(), password })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.message || 'Registration failed');
 
             // Store token securely
-            await SecureStore.setItemAsync('authToken', mockToken);
-            await SecureStore.setItemAsync('user', JSON.stringify(mockUser));
+            await StorageService.setItem('authToken', data.token);
+            await StorageService.setItem('user', JSON.stringify(data));
 
             // Update Redux state
-            dispatch(loginSuccess({ user: mockUser, token: mockToken }));
+            dispatch(loginSuccess({ user: data, token: data.token }));
 
             // Show splash screen
             setIsLoading(false);
@@ -97,29 +156,19 @@ export default function SignUpScreen() {
         }
     };
 
-    const handleGoogleSignUp = async () => {
+    const handleGoogleSignUp = () => {
+        if (GOOGLE_WEB_CLIENT_ID.includes('YOUR_WEB_CLIENT_ID')) {
+            if (__DEV__) {
+                alert('Using Dev Bypass: Google Client IDs are placeholders.');
+                handleBackendGoogleLogin('mock-google-token');
+                return;
+            } else {
+                alert('Please configure Google Client IDs in source code.');
+                return;
+            }
+        }
         setIsLoading(true);
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        const mockUser = {
-            id: Date.now().toString(),
-            name: 'New User',
-            email: 'user@example.com',
-            avatar: 'https://ui-avatars.com/api/?name=New+User&background=2563EB&color=fff',
-            createdAt: new Date().toISOString(),
-        };
-        const mockToken = 'mock-jwt-token-' + Date.now();
-
-        await SecureStore.setItemAsync('authToken', mockToken);
-        await SecureStore.setItemAsync('user', JSON.stringify(mockUser));
-        dispatch(loginSuccess({ user: mockUser, token: mockToken }));
-
-        setIsLoading(false);
-        setShowSplash(true);
-
-        setTimeout(() => {
-            router.replace('/(tabs)');
-        }, 2500);
+        promptAsync();
     };
 
     // Splash Screen (Loading Animation)

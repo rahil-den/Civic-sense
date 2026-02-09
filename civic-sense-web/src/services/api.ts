@@ -16,7 +16,9 @@ api.interceptors.request.use(
             config.headers['Authorization'] = `Bearer ${token}`;
         }
         // Add mock role for development (simulate SUPERADMIN)
-        config.headers['x-mock-role'] = 'SUPERADMIN';
+        if (process.env.NODE_ENV === 'development') {
+            config.headers['x-mock-role'] = 'SUPERADMIN';
+        }
         return config;
     },
     (error) => {

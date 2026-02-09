@@ -10,10 +10,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { StorageService } from '../../services/storageService';
 import { useAppDispatch } from '../../store';
-import { loginSuccess } from '../../store/slices/authSlice';
+import { loginSuccess, loginFailure, setLoading } from '../../store/slices/authSlice';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
+import { api, API_BASE_URL } from '../../services/api';
+
+WebBrowser.maybeCompleteAuthSession();
+
+// Placeholder Client IDs - User must replace these
+const GOOGLE_WEB_CLIENT_ID = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_IOS_CLIENT_ID = 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_ANDROID_CLIENT_ID = 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com';
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,37 +32,78 @@ export default function WelcomeScreen() {
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const [showSplash, setShowSplash] = useState(false);
 
-    const handleGoogleLogin = async () => {
-        // UI-ONLY: Mock Google OAuth - no real auth logic
+    const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+        clientId: GOOGLE_WEB_CLIENT_ID,
+        iosClientId: GOOGLE_IOS_CLIENT_ID,
+        androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+    });
+
+    React.useEffect(() => {
+        if (response?.type === 'success') {
+            const { id_token } = response.params;
+            handleBackendLogin(id_token);
+        } else if (response?.type === 'error') {
+            setIsGoogleLoading(false);
+            alert('Google Sign-In failed');
+        }
+    }, [response]);
+
+    const handleBackendLogin = async (idToken: string) => {
+        try {
+            setIsGoogleLoading(true);
+
+            // Call backend to verify token and get user/jwt
+            // We use fetch directly or axios because api slice might be strictly typed or cached
+            // But let's assume we can use a raw fetch to our backend URL
+            // Getting base URL from api service
+            // A bit hacky to get base URL, let's hardcode or better, use extra arg
+            const API_URL = `${API_BASE_URL}/auth/google`;
+
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.message || 'Login failed');
+
+            // Store credentials
+            await StorageService.setItem('authToken', data.token);
+            await StorageService.setItem('user', JSON.stringify(data));
+
+            // Update Redux state
+            dispatch(loginSuccess({ user: data, token: data.token }));
+
+            setIsGoogleLoading(false);
+            setShowSplash(true);
+
+            // Navigate to Home after splash
+            setTimeout(() => {
+                router.replace('/(tabs)');
+            }, 2000);
+
+        } catch (error: any) {
+            console.error('Login error:', error);
+            setIsGoogleLoading(false);
+            alert(error.message || 'Failed to authenticate with backend');
+        }
+    };
+
+    const handleGoogleLogin = () => {
+        if (GOOGLE_WEB_CLIENT_ID.includes('YOUR_WEB_CLIENT_ID')) {
+            if (__DEV__) {
+                alert('Using Dev Bypass: Google Client IDs are placeholders.');
+                handleBackendLogin('mock-google-token');
+                return;
+            } else {
+                alert('Please configure Google Client IDs in source code.');
+                return;
+            }
+        }
         setIsGoogleLoading(true);
-
-        // Simulate brief loading
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Mock user data
-        const mockUser = {
-            id: '1',
-            name: 'Civic User',
-            email: 'user@example.com',
-            avatar: 'https://ui-avatars.com/api/?name=Civic+User&background=2563EB&color=fff',
-            createdAt: new Date().toISOString(),
-        };
-        const mockToken = 'mock-jwt-token-google-' + Date.now();
-
-        // Store mock credentials
-        await SecureStore.setItemAsync('authToken', mockToken);
-        await SecureStore.setItemAsync('user', JSON.stringify(mockUser));
-
-        // Update Redux state
-        dispatch(loginSuccess({ user: mockUser, token: mockToken }));
-
-        setIsGoogleLoading(false);
-        setShowSplash(true);
-
-        // Navigate to Home after splash
-        setTimeout(() => {
-            router.replace('/(tabs)');
-        }, 2000);
+        promptAsync();
     };
 
     const handleEmailLogin = () => {
