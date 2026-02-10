@@ -10,10 +10,25 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Platform, // Added
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+// Dynamic Map Import
+let MapView: any = View;
+let Marker: any = View;
+let UrlTile: any = View;
+if (Platform.OS !== 'web') {
+  try {
+    const Maps = require('react-native-maps');
+    MapView = Maps.default;
+    Marker = Maps.Marker;
+    UrlTile = Maps.UrlTile;
+  } catch (e) {
+    console.warn('Maps load failed', e);
+  }
+}
 import { useAppSelector } from '../../store';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
@@ -132,6 +147,34 @@ export default function IssueDetailScreen() {
               </View>
             </>
           )}
+
+          <View style={{ marginTop: 16, height: 150, borderRadius: 12, overflow: 'hidden' }}>
+            <MapView
+              style={{ flex: 1 }}
+              initialRegion={{
+                latitude: issue.location.latitude,
+                longitude: issue.location.longitude,
+                latitudeDelta: 0.005,
+                longitudeDelta: 0.005,
+              }}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              pitchEnabled={false}
+              rotateEnabled={false}
+            >
+              <UrlTile
+                urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                maximumZ={19}
+                zIndex={-1}
+              />
+              <Marker
+                coordinate={{
+                  latitude: issue.location.latitude,
+                  longitude: issue.location.longitude,
+                }}
+              />
+            </MapView>
+          </View>
         </View>
 
         {/* Timeline (placeholder) */}

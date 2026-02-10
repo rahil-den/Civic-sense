@@ -9,14 +9,41 @@ export const userApi = api.injectEndpoints({
     endpoints: (builder) => ({
         // Get current user profile
         getProfile: builder.query<User, void>({
-            query: () => '/user/profile',
+            query: () => '/users/profile',
             providesTags: ['User'],
         }),
 
         // Get user stats
         getUserStats: builder.query<UserStats, void>({
-            query: () => '/user/stats',
+            query: () => '/users/stats',
             providesTags: ['User'],
+        }),
+
+        // Update profile
+        updateProfile: builder.mutation<User, Partial<User>>({
+            query: (body) => ({
+                url: '/users/profile',
+                method: 'PUT',
+                body,
+            }),
+            invalidatesTags: ['User'],
+        }),
+
+        // Change password
+        changePassword: builder.mutation<void, any>({
+            query: (body) => ({
+                url: '/users/change-password',
+                method: 'PUT',
+                body,
+            }),
+        }),
+
+        // Delete account
+        deleteAccount: builder.mutation<void, void>({
+            query: () => ({
+                url: '/users/me',
+                method: 'DELETE',
+            }),
         }),
 
         // Google OAuth login
@@ -46,6 +73,9 @@ export const userApi = api.injectEndpoints({
 export const {
     useGetProfileQuery,
     useGetUserStatsQuery,
+    useUpdateProfileMutation,
+    useChangePasswordMutation,
+    useDeleteAccountMutation,
     useGoogleLoginMutation,
     useLogoutMutation,
     useLazyDownloadIssuePdfQuery,

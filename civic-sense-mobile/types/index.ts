@@ -14,6 +14,11 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
+  preferences?: {
+    pushNotifications: boolean;
+    emailNotifications: boolean;
+    locationServices: boolean;
+  };
   createdAt: string;
 }
 
@@ -37,6 +42,15 @@ export interface Issue {
   createdAt: string;
   updatedAt: string;
   distance?: string; // Calculated on client
+  isImportant?: boolean;
+  timeline?: TimelineEvent[];
+}
+
+export interface TimelineEvent {
+  action: string;
+  by: any;
+  note: string;
+  timestamp: string;
 }
 
 // Notification Types

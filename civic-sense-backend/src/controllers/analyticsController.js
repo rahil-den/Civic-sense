@@ -175,6 +175,58 @@ export const getHeatmap = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+// GET /api/analytics/trends
+export const getResolutionTrends = async (req, res) => {
+    try {
+        const cacheKey = `analytics:trends`;
+        const cachedData = await redis.get(cacheKey);
+
+        if (cachedData) {
+            return res.json(JSON.parse(cachedData));
+        }
+
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+        sixMonthsAgo.setDate(1);
+
+        const trends = await Issue.aggregate([
+            { $match: { createdAt: { $gte: sixMonthsAgo } } },
+            {
+                $project: {
+                    month: { $month: "$createdAt" },
+                    year: { $year: "$createdAt" },
+                    status: 1
+                }
+            },
+            {
+                $group: {
+                    _id: { month: "$month", year: "$year" },
+                    total: { $sum: 1 },
+                    resolved: {
+                        $sum: { $cond: [{ $eq: ["$status", "SOLVED"] }, 1, 0] }
+                    }
+                }
+            },
+            { $sort: { "_id.year": 1, "_id.month": 1 } }
+        ]);
+
+        // Format for frontend Recharts (Month Name)
+        const formattedTrends = trends.map(t => {
+            const date = new Date(t._id.year, t._id.month - 1);
+            return {
+                name: date.toLocaleString('default', { month: 'short' }),
+                resolved: t.resolved,
+                pending: t.total - t.resolved
+            };
+        });
+
+        await redis.setex(cacheKey, 300, JSON.stringify(formattedTrends));
+
+        res.json(formattedTrends);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 // GET /api/analytics/comparison
 export const getCityComparison = async (req, res) => {
     try {

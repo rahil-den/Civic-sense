@@ -1,6 +1,17 @@
 import User from '../models/User.js';
 import Warning from '../models/Warning.js';
 
+// Get Current User Profile
+export const getMyProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password_hash');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Get Users (Admin view)
 export const getUsers = async (req, res) => {
     try {
@@ -94,6 +105,81 @@ export const toggleBanUser = async (req, res) => {
             message: `User ${user.isBanned ? 'banned' : 'unbanned'} successfully`,
             isBanned: user.isBanned
         });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Update Profile (User themselves)
+export const updateProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { name, email, preferences, department, phone } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (name) user.name = name;
+        if (email) user.email = email;
+        if (department) user.department = department;
+        if (phone) user.phone = phone;
+        if (preferences) {
+            user.preferences = { ...user.preferences, ...preferences };
+        }
+
+        await user.save();
+
+        res.json({
+            message: 'Profile updated successfully',
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                avatar: user.avatar,
+                preferences: user.preferences
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Change Password
+export const changePassword = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { currentPassword, newPassword } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Check current password
+        const isMatch = await user.matchPassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid current password' });
+        }
+
+        user.password = newPassword; // User model pre-save hook should hash this
+        await user.save();
+
+        res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Delete My Account
+export const deleteMyAccount = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await User.findByIdAndDelete(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({ message: 'Account deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

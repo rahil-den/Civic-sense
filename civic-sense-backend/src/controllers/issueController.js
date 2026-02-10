@@ -2,6 +2,7 @@ import Issue from '../models/Issue.js';
 import IssueStatusHistory from '../models/IssueStatusHistory.js';
 import IssueResolution from '../models/IssueResolution.js';
 import CommunityFeed from '../models/CommunityFeed.js';
+import Notification from '../models/Notification.js';
 import { invalidateCache } from '../utils/cacheHandler.js';
 import { logAction } from '../utils/auditLogger.js';
 import City from '../models/City.js';
@@ -92,7 +93,8 @@ export const getIssueById = async (req, res) => {
             .populate('stateId', 'name')
             .populate('cityId', 'name')
             .populate('areaId', 'name')
-            .populate('categoryId', 'name icon');
+            .populate('categoryId', 'name icon')
+            .populate('timeline.by', 'name avatar');
 
         if (!issue) return res.status(404).json({ message: 'Issue not found' });
 
@@ -115,6 +117,14 @@ export const updateStatus = async (req, res) => {
 
         const oldStatus = issue.status;
         issue.status = status;
+
+        issue.timeline.push({
+            action: 'STATUS_CHANGE',
+            by: req.user.id || req.user._id,
+            note: `Status updated to ${status}. Remarks: ${remarks || 'None'}`,
+            timestamp: new Date()
+        });
+
         await issue.save();
 
         try {
@@ -137,6 +147,14 @@ export const updateStatus = async (req, res) => {
                 issueId: issue._id,
                 eventType: 'UPDATED',
                 message: `Issue status updated to ${status}`
+            });
+
+            // Notify User
+            await Notification.create({
+                userId: issue.userId,
+                title: 'Issue Update',
+                message: `Your issue "${issue.title}" status has been updated to ${status}.`,
+                type: 'STATUS'
             });
 
             // Safe log action
@@ -176,6 +194,14 @@ export const resolveIssue = async (req, res) => {
 
         const oldStatus = issue.status;
         issue.status = 'SOLVED'; // Using 'SOLVED' as per user dictionary
+
+        issue.timeline.push({
+            action: 'SOLVED',
+            by: req.user.id || req.user._id,
+            note: resolutionNotes || 'Issue resolved',
+            timestamp: new Date()
+        });
+
         await issue.save();
 
         await IssueResolution.create({
@@ -197,6 +223,14 @@ export const resolveIssue = async (req, res) => {
             issueId: issue._id,
             eventType: 'SOLVED',
             message: `Issue solved!`
+        });
+
+        // Notify User
+        await Notification.create({
+            userId: issue.userId,
+            title: 'Issue Resolved',
+            message: `Great news! Your issue "${issue.title}" has been resolved.`,
+            type: 'STATUS'
         });
 
         await logAction(req.user.id, 'RESOLVE_ISSUE', 'Issue', issue._id, { resolutionNotes });
@@ -287,6 +321,42 @@ export const getCategories = async (req, res) => {
     }
 };
 
+// Toggle Important (Admin)
+export const toggleImportant = async (req, res) => {
+    try {
+        const issue = await Issue.findById(req.params.id);
+        if (!issue) return res.status(404).json({ message: 'Issue not found' });
+
+        issue.isImportant = !issue.isImportant;
+
+        issue.timeline.push({
+            action: 'IMPORTANT_FLAG',
+            by: req.user.id || req.user._id,
+            note: `Marked as ${issue.isImportant ? 'Important' : 'Normal'}`,
+            timestamp: new Date()
+        });
+
+        await issue.save();
+
+        if (issue.isImportant) {
+            await Notification.create({
+                userId: issue.userId,
+                title: 'Issue flagged as Important',
+                message: `Your issue "${issue.title}" has been flagged as Important by the administration.`,
+                type: 'WARNING'
+            });
+        }
+
+        res.json({
+            message: `Issue marked as ${issue.isImportant ? 'important' : 'normal'}`,
+            isImportant: issue.isImportant,
+            timeline: issue.timeline
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 export default {
     createIssue,
     getIssues,
@@ -294,5 +364,6 @@ export default {
     updateStatus,
     resolveIssue,
     getDuplicateIssues,
-    getCategories
+    getCategories,
+    toggleImportant
 };

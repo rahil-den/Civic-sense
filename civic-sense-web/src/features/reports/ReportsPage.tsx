@@ -4,23 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { Download, FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
+import api from "@/services/api";
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
-const resolutionData = [
-    { name: 'Jan', resolved: 320, pending: 100 },
-    { name: 'Feb', resolved: 410, pending: 80 },
-    { name: 'Mar', resolved: 380, pending: 120 },
-    { name: 'Apr', resolved: 450, pending: 70 },
-    { name: 'May', resolved: 520, pending: 50 },
-    { name: 'Jun', resolved: 480, pending: 90 },
-];
-
-const departmentData = [
-    { name: 'Public Works', value: 35, color: '#2563eb' },
-    { name: 'Sanitation', value: 28, color: '#16a34a' },
-    { name: 'Water Supply', value: 17, color: '#dc2626' },
-    { name: 'Electricity', value: 20, color: '#ca8a04' },
-];
+const COLORS = ['#2563eb', '#16a34a', '#dc2626', '#ca8a04', '#9333ea', '#0891b2'];
 
 const recentReports = [
     { id: 1, name: 'Monthly Issue Summary - June 2024', generated: 'Jul 1, 2024', format: 'PDF', size: '2.4 MB' },
@@ -29,23 +18,46 @@ const recentReports = [
     { id: 4, name: 'Resolution Time Trends', generated: 'Jun 25, 2024', format: 'PDF', size: '1.2 MB' },
 ];
 
-import api from "@/services/api";
-import { useEffect, useState } from 'react';
-
 export const ReportsPage = () => {
     const [cities, setCities] = useState<any[]>([]);
     const [selectedCity, setSelectedCity] = useState("");
+    const [loading, setLoading] = useState(true);
+
+    const [resolutionData, setResolutionData] = useState<any[]>([]);
+    const [departmentData, setDepartmentData] = useState<any[]>([]);
 
     useEffect(() => {
-        const fetchCities = async () => {
+        const fetchData = async () => {
             try {
-                const res = await api.get('/locations/cities');
-                setCities(res.data);
+                setLoading(true);
+                const [citiesRes, stateRes, trendsRes] = await Promise.all([
+                    api.get('/locations/cities'),
+                    api.get('/analytics/state'),
+                    api.get('/analytics/trends')
+                ]);
+
+                setCities(citiesRes.data);
+                
+                // Process Category Distribution for "Department" Chart
+                const categories = stateRes.data.categoryDistribution || [];
+                const processedDeptData = categories.map((cat: any, index: number) => ({
+                    name: cat._id,
+                    value: cat.count,
+                    color: COLORS[index % COLORS.length]
+                }));
+                setDepartmentData(processedDeptData);
+
+                // Process Trends
+                setResolutionData(trendsRes.data);
+
             } catch (err) {
-                console.error(err);
+                console.error("Failed to fetch report data", err);
+                toast.error("Failed to load report data");
+            } finally {
+                setLoading(false);
             }
         };
-        fetchCities();
+        fetchData();
     }, []);
 
     const handleDownloadPDF = async () => {
@@ -57,83 +69,117 @@ export const ReportsPage = () => {
             link.setAttribute('download', 'state-report.pdf');
             document.body.appendChild(link);
             link.click();
+            toast.success("PDF Downloaded successfully");
         } catch (error) {
             console.error("Export failed", error);
-            alert("Export failed");
+            toast.error("Export failed");
         }
     };
 
     const handleDownloadCSV = async () => {
         if (!selectedCity) {
-            alert("Please select a city first");
+            toast.error("Please select a city first");
             return;
         }
         try {
             const response = await api.get(`/export/csv?cityId=${selectedCity}`, { responseType: 'blob' });
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `city-issues.csv`);
-            document.body.appendChild(link);
-            link.click();
+const url = window.URL.createObjectURL(new Blob([response.data]));
+const link = document.createElement('a');
+link.href = url;
+link.setAttribute('download', `city-issues.csv`);
+document.body.appendChild(link);
+link.click();
+toast.success("CSV Downloaded successfully");
         } catch (error) {
-            console.error("Export failed", error);
-            alert("Export failed");
-        }
+    console.error("Export failed", error);
+    toast.error("Export failed");
+}
     };
 
+if (loading) {
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Reports</h2>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Select value={selectedCity} onValueChange={setSelectedCity}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select City" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {cities.map(city => (
-                                <SelectItem key={city._id} value={city._id}>{city.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <Button onClick={handleDownloadCSV} variant="outline" className="flex items-center gap-2">
-                        <FileSpreadsheet className="h-4 w-4" /> CSV
-                    </Button>
-                    <Button onClick={handleDownloadPDF} className="flex items-center gap-2">
-                        <FileText className="h-4 w-4" /> PDF Report
-                    </Button>
-                </div>
-            </div>
+        <div className="flex items-center justify-center h-screen">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+}
 
-            <div className="grid gap-6 md:grid-cols-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Monthly Resolution Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[300px]">
+return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Reports & Analytics</h2>
+                <p className="text-slate-500">Export data and view system-wide performance metrics.</p>
+            </div>
+            <div className="flex items-center gap-2">
+                <Select value={selectedCity} onValueChange={setSelectedCity}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select City for CSV" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {cities.map(city => (
+                            <SelectItem key={city._id} value={city._id}>{city.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">State Report (PDF)</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">Comprehensive</div>
+                    <p className="text-xs text-muted-foreground">Includes summary & recent issues</p>
+                    <Button className="w-full mt-4" onClick={handleDownloadPDF}>
+                        <Download className="mr-2 h-4 w-4" /> Download PDF
+                    </Button>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">City Data (CSV)</CardTitle>
+                    <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">Raw Data</div>
+                    <p className="text-xs text-muted-foreground">Export issues for external analysis</p>
+                    <Button variant="outline" className="w-full mt-4" onClick={handleDownloadCSV}>
+                        <Download className="mr-2 h-4 w-4" /> Download CSV
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+            <Card className="col-span-1">
+                <CardHeader>
+                    <CardTitle>Resolution Trends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={resolutionData}>
-                                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                                    itemStyle={{ color: '#1e293b' }}
-                                />
-                                <Bar dataKey="resolved" fill="#16a34a" radius={[4, 4, 0, 0]} name="Resolved" />
-                                <Bar dataKey="pending" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Pending" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey="resolved" fill="#22c55e" name="Resolved" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="pending" fill="#ef4444" name="Pending" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
-                    </CardContent>
-                </Card>
+                    </div>
+                </CardContent>
+            </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Issues by Department</CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[300px]">
+            <Card className="col-span-1">
+                <CardHeader>
+                    <CardTitle>Department/Category Performance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
@@ -150,54 +196,55 @@ export const ReportsPage = () => {
                                     ))}
                                 </Pie>
                                 <Tooltip />
-                                <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" />
+                                <Legend />
                             </PieChart>
                         </ResponsiveContainer>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-slate-500" />
-                        <CardTitle>Recent Reports</CardTitle>
                     </div>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Report Name</TableHead>
-                                <TableHead>Generated</TableHead>
-                                <TableHead>Format</TableHead>
-                                <TableHead>Size</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {recentReports.map((report) => (
-                                <TableRow key={report.id}>
-                                    <TableCell className="font-medium">{report.name}</TableCell>
-                                    <TableCell>{report.generated}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className="uppercase text-xs font-mono">
-                                            {report.format}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>{report.size}</TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm">
-                                            <Download className="h-4 w-4 mr-2" />
-                                            Download
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
                 </CardContent>
             </Card>
         </div>
-    );
+
+        <Card>
+            <CardHeader>
+                <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-slate-500" />
+                    <CardTitle>Recent Reports</CardTitle>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Report Name</TableHead>
+                            <TableHead>Generated</TableHead>
+                            <TableHead>Format</TableHead>
+                            <TableHead>Size</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {recentReports.map((report) => (
+                            <TableRow key={report.id}>
+                                <TableCell className="font-medium">{report.name}</TableCell>
+                                <TableCell>{report.generated}</TableCell>
+                                <TableCell>
+                                    <Badge variant="outline" className="uppercase text-xs font-mono">
+                                        {report.format}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>{report.size}</TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="ghost" size="sm">
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Download
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    </div>
+);
 };

@@ -14,6 +14,8 @@ import userRoutes from './routes/userRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import governanceRoutes from './routes/governanceRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import moderationRoutes from './routes/moderationRoutes.js';
 
 import helmet from 'helmet';
 import cors from 'cors';
@@ -73,6 +75,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/governance', governanceRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/moderation', moderationRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

@@ -24,6 +24,11 @@ import { useAppSelector, useAppDispatch } from '../../store';
 import { logout } from '../../store/slices/authSlice';
 import { socketService } from '../../services/socketService';
 import { useGetUserIssuesQuery } from '../../services/issueApi';
+import {
+  useUpdateProfileMutation,
+  useChangePasswordMutation,
+  useDeleteAccountMutation
+} from '../../services/userApi';
 import EmptyState from '../../components/ui/EmptyState';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
 import type { Issue } from '../../types';
@@ -47,17 +52,46 @@ export default function ProfileScreen() {
   const { user } = useAppSelector((state) => state.auth);
   // const { issues } = useAppSelector((state) => state.issue);
   const { data: userIssues = [], isLoading } = useGetUserIssuesQuery();
+  const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
+  const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordMutation();
+  const [deleteAccount, { isLoading: isDeleting }] = useDeleteAccountMutation();
 
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [editName, setEditName] = useState(user?.name || 'Rahil Shaikh');
   const [editEmail, setEditEmail] = useState(user?.email || 'rahil@example.com');
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // Settings
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(false);
-  const [locationServices, setLocationServices] = useState(true);
+  // Settings
+  const [pushNotifications, setPushNotificationsState] = useState(user?.preferences?.pushNotifications ?? true);
+  const [emailNotifications, setEmailNotificationsState] = useState(user?.preferences?.emailNotifications ?? false);
+  const [locationServices, setLocationServicesState] = useState(user?.preferences?.locationServices ?? true);
+
+  const updatePreference = async (key: string, value: boolean) => {
+    try {
+      // Optimistic update
+      if (key === 'pushNotifications') setPushNotificationsState(value);
+      if (key === 'emailNotifications') setEmailNotificationsState(value);
+      if (key === 'locationServices') setLocationServicesState(value);
+
+      await updateProfile({
+        preferences: {
+          pushNotifications: key === 'pushNotifications' ? value : pushNotifications,
+          emailNotifications: key === 'emailNotifications' ? value : emailNotifications,
+          locationServices: key === 'locationServices' ? value : locationServices,
+        }
+      }).unwrap();
+    } catch (error) {
+      // Revert on error (optional, but good UX)
+      console.error("Failed to update preference", error);
+    }
+  };
 
   // const userIssues = issues.filter((issue) => issue.userId === '1'); // Replaced by query
   const stats = {
@@ -78,9 +112,34 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleSaveProfile = () => {
-    Alert.alert('Success', 'Profile updated successfully!');
-    setShowEditModal(false);
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword) {
+      Alert.alert('Error', 'Please fill in both fields');
+      return;
+    }
+    try {
+      await changePassword({ currentPassword, newPassword }).unwrap();
+      Alert.alert('Success', 'Password changed successfully');
+      setShowPasswordModal(false);
+      setCurrentPassword('');
+      setNewPassword('');
+    } catch (error: any) {
+      Alert.alert('Error', error?.data?.message || 'Failed to change password');
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      await updateProfile({
+        name: editName,
+        email: editEmail,
+        // We can also save preferences here if they are in the modal, but currently they are separate.
+      }).unwrap();
+      Alert.alert('Success', 'Profile updated successfully!');
+      setShowEditModal(false);
+    } catch (error: any) {
+      Alert.alert('Error', error?.data?.message || 'Failed to update profile');
+    }
   };
 
   const performLogout = async () => {
@@ -207,12 +266,11 @@ export default function ProfileScreen() {
         {activeTab === 'profile' && (
           <SettingsContent
             pushNotifications={pushNotifications}
-            setPushNotifications={setPushNotifications}
             emailNotifications={emailNotifications}
-            setEmailNotifications={setEmailNotifications}
             locationServices={locationServices}
-            setLocationServices={setLocationServices}
+            onUpdatePreference={updatePreference}
             onEditProfile={() => setShowEditModal(true)}
+            onChangePassword={() => setShowPasswordModal(true)}
             onLogout={handleLogout}
             onDeleteAccount={handleDeleteAccount}
           />
@@ -262,8 +320,50 @@ export default function ProfileScreen() {
               />
             </View>
 
-            <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
-              <Text style={styles.saveButtonText}>Save Changes</Text>
+            <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile} disabled={isUpdating}>
+              {isUpdating ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Save Changes</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Change Password Modal */}
+      <Modal visible={showPasswordModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Change Password</Text>
+              <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Current Password</Text>
+              <TextInput
+                style={styles.input}
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                placeholder="Enter current password"
+                placeholderTextColor={COLORS.textLight}
+                secureTextEntry
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>New Password</Text>
+              <TextInput
+                style={styles.input}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholder="Enter new password"
+                placeholderTextColor={COLORS.textLight}
+                secureTextEntry
+              />
+            </View>
+
+            <TouchableOpacity style={styles.saveButton} onPress={handleChangePassword} disabled={isChangingPassword}>
+              {isChangingPassword ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Update Password</Text>}
             </TouchableOpacity>
           </View>
         </View>
@@ -275,24 +375,22 @@ export default function ProfileScreen() {
 // Settings Tab Content
 function SettingsContent({
   pushNotifications,
-  setPushNotifications,
   emailNotifications,
-  setEmailNotifications,
   locationServices,
-  setLocationServices,
   onEditProfile,
   onLogout,
   onDeleteAccount,
+  onChangePassword,
+  onUpdatePreference,
 }: {
   pushNotifications: boolean;
-  setPushNotifications: (val: boolean) => void;
   emailNotifications: boolean;
-  setEmailNotifications: (val: boolean) => void;
   locationServices: boolean;
-  setLocationServices: (val: boolean) => void;
   onEditProfile: () => void;
   onLogout: () => void;
   onDeleteAccount: () => void;
+  onChangePassword: () => void;
+  onUpdatePreference: (key: string, value: boolean) => void;
 }) {
   return (
     <View>
@@ -303,7 +401,7 @@ function SettingsContent({
           title="Push Notifications"
           subtitle="Get notified about report updates"
           value={pushNotifications}
-          onToggle={setPushNotifications}
+          onToggle={(val) => onUpdatePreference('pushNotifications', val)}
         />
         <View style={styles.cardDivider} />
         <SettingRow
@@ -311,7 +409,7 @@ function SettingsContent({
           title="Email Notifications"
           subtitle="Receive email summaries"
           value={emailNotifications}
-          onToggle={setEmailNotifications}
+          onToggle={(val) => onUpdatePreference('emailNotifications', val)}
         />
         <View style={styles.cardDivider} />
         <SettingRow
@@ -319,7 +417,7 @@ function SettingsContent({
           title="Location Services"
           subtitle="Auto-detect issue location"
           value={locationServices}
-          onToggle={setLocationServices}
+          onToggle={(val) => onUpdatePreference('locationServices', val)}
         />
       </View>
 
@@ -330,7 +428,7 @@ function SettingsContent({
         <ActionRow
           icon="lock-closed-outline"
           title="Change Password"
-          onPress={() => Alert.alert('Coming Soon', 'Password change feature coming soon!')}
+          onPress={onChangePassword}
         />
         <View style={styles.cardDivider} />
         <ActionRow

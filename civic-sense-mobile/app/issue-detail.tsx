@@ -23,6 +23,7 @@ import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../constant
 import { getCategoryLabel, getCategoryColor } from '../constants/categories';
 
 import { useGetIssueByIdQuery } from '../services/issueApi';
+import Skeleton from '../components/ui/Skeleton';
 
 const { width } = Dimensions.get('window');
 
@@ -44,8 +45,22 @@ export default function IssueDetailScreen() {
 
     if (isLoading && !issue) {
         return (
-            <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
+            <SafeAreaView style={styles.container}>
+                <View style={{ height: 300, width: '100%', backgroundColor: COLORS.card }}>
+                    <Skeleton height="100%" borderRadius={0} />
+                </View>
+                <View style={{ padding: SPACING.m }}>
+                    <Skeleton height={28} width="80%" style={{ marginBottom: SPACING.s }} />
+                    <Skeleton height={20} width="40%" style={{ marginBottom: SPACING.l }} />
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.m }}>
+                        <Skeleton height={60} width="30%" />
+                        <Skeleton height={60} width="30%" />
+                        <Skeleton height={60} width="30%" />
+                    </View>
+
+                    <Skeleton height={100} width="100%" borderRadius={BORDER_RADIUS.m} />
+                </View>
             </SafeAreaView>
         );
     }
@@ -102,6 +117,13 @@ export default function IssueDetailScreen() {
                 <View style={[styles.imageBadge, { backgroundColor: getStatusColor(issue.status) }]}>
                     <Text style={styles.imageBadgeText}>{formatStatus(issue.status)}</Text>
                 </View>
+
+                {/* Important Badge */}
+                {issue.isImportant && (
+                    <View style={[styles.imageBadge, { top: 50, backgroundColor: COLORS.error }]}>
+                        <Text style={styles.imageBadgeText}>IMPORTANT</Text>
+                    </View>
+                )}
 
                 {/* Before/After Tabs (only if resolved) */}
                 {isResolved && (
@@ -172,29 +194,70 @@ export default function IssueDetailScreen() {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Timeline</Text>
                     <View style={styles.timeline}>
-                        <TimelineItem
-                            icon="flag"
-                            title="Issue Reported"
-                            date={issue.createdAt}
-                            color={COLORS.primary}
-                            isFirst
-                        />
-                        {issue.status !== 'reported' && (
-                            <TimelineItem
-                                icon="construct"
-                                title="Work In Progress"
-                                date={issue.updatedAt}
-                                color={COLORS.inProgress}
-                            />
-                        )}
-                        {isResolved && (
-                            <TimelineItem
-                                icon="checkmark-circle"
-                                title="Issue Resolved"
-                                date={issue.updatedAt}
-                                color={COLORS.success}
-                                isLast
-                            />
+                        {issue.timeline && issue.timeline.length > 0 ? (
+                            issue.timeline.map((event, index) => {
+                                let icon = 'time-outline';
+                                let color = COLORS.textMuted;
+                                let title = event.action.replace('_', ' ');
+
+                                switch (event.action) {
+                                    case 'STATUS_CHANGE':
+                                        icon = 'construct';
+                                        color = COLORS.primary;
+                                        break;
+                                    case 'IMPORTANT_FLAG':
+                                        icon = 'alert-circle';
+                                        color = COLORS.error;
+                                        break;
+                                    case 'SOLVED':
+                                        icon = 'checkmark-circle';
+                                        color = COLORS.success;
+                                        break;
+                                    default:
+                                        icon = 'information-circle';
+                                }
+
+                                return (
+                                    <TimelineItem
+                                        key={index}
+                                        icon={icon}
+                                        title={title}
+                                        subtitle={event.note}
+                                        date={event.timestamp}
+                                        color={color}
+                                        isFirst={index === 0}
+                                        isLast={index === (issue.timeline?.length || 0) - 1}
+                                    />
+                                );
+                            })
+                        ) : (
+                            // Fallback for legacy issues without timeline
+                            <>
+                                <TimelineItem
+                                    icon="flag"
+                                    title="Issue Reported"
+                                    date={issue.createdAt}
+                                    color={COLORS.primary}
+                                    isFirst
+                                />
+                                {issue.status !== 'reported' && (
+                                    <TimelineItem
+                                        icon="construct"
+                                        title="Work In Progress"
+                                        date={issue.updatedAt}
+                                        color={COLORS.inProgress}
+                                    />
+                                )}
+                                {isResolved && (
+                                    <TimelineItem
+                                        icon="checkmark-circle"
+                                        title="Issue Resolved"
+                                        date={issue.updatedAt}
+                                        color={COLORS.success}
+                                        isLast
+                                    />
+                                )}
+                            </>
                         )}
                     </View>
                 </View>
@@ -225,6 +288,7 @@ export default function IssueDetailScreen() {
 function TimelineItem({
     icon,
     title,
+    subtitle,
     date,
     color,
     isFirst,
@@ -232,6 +296,7 @@ function TimelineItem({
 }: {
     icon: string;
     title: string;
+    subtitle?: string;
     date: string;
     color: string;
     isFirst?: boolean;
@@ -248,6 +313,7 @@ function TimelineItem({
             </View>
             <View style={styles.timelineContent}>
                 <Text style={styles.timelineTitle}>{title}</Text>
+                {subtitle && <Text style={[styles.timelineDate, { marginTop: 2, color: COLORS.textSecondary }]}>{subtitle}</Text>}
                 <Text style={styles.timelineDate}>
                     {new Date(date).toLocaleDateString('en-US', {
                         month: 'short',

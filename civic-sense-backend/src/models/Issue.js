@@ -31,6 +31,15 @@ const issueSchema = new mongoose.Schema({
 
     images: [{ type: String }],
 
+    isImportant: { type: Boolean, default: false },
+
+    timeline: [{
+        action: { type: String, required: true }, // STATUS_CHANGE, COMMENT, IMPORTANT_FLAG
+        by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        note: { type: String },
+        timestamp: { type: Date, default: Date.now }
+    }],
+
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 }, {

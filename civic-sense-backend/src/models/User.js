@@ -9,6 +9,24 @@ const userSchema = new mongoose.Schema({
     oauthProvider: { type: String }, // google, github
     oauthId: { type: String },
 
+    department: { type: String },
+    phone: { type: String },
+
+    preferences: {
+        pushNotifications: {
+            type: Boolean,
+            default: true
+        },
+        emailNotifications: {
+            type: Boolean,
+            default: false
+        },
+        locationServices: {
+            type: Boolean,
+            default: true
+        }
+    },
+
     role: {
         type: String,
         enum: ['USER', 'ADMIN', 'SUPERADMIN'],

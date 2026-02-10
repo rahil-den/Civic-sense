@@ -1,5 +1,5 @@
 import express from 'express';
-import { getUsers, warnUser, deleteUser, toggleBanUser } from '../controllers/userController.js';
+import { getUsers, warnUser, deleteUser, toggleBanUser, updateProfile, changePassword, deleteMyAccount, getMyProfile } from '../controllers/userController.js';
 import { verifyToken, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -13,7 +13,13 @@ router.post('/:userId/warn', verifyToken, requireRole('ADMIN'), warnUser);
 // Manual Ban/Unban toggle
 router.patch('/:userId/ban', verifyToken, requireRole('ADMIN'), toggleBanUser);
 
-// Delete a user
+// Profile Management
+router.get('/profile', verifyToken, getMyProfile);
+router.put('/profile', verifyToken, updateProfile);
+router.put('/change-password', verifyToken, changePassword);
+router.delete('/me', verifyToken, deleteMyAccount);
+
+// Delete a user (Admin)
 router.delete('/:userId', verifyToken, requireRole('ADMIN'), deleteUser);
 
 export default router;

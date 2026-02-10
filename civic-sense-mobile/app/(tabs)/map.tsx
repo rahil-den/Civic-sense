@@ -17,6 +17,7 @@ import * as Location from 'expo-location';
 let MapView: any;
 let Marker: any;
 let Callout: any;
+let UrlTile: any;
 
 if (Platform.OS !== 'web') {
   try {
@@ -24,11 +25,13 @@ if (Platform.OS !== 'web') {
     MapView = Maps.default;
     Marker = Maps.Marker;
     Callout = Maps.Callout;
+    UrlTile = Maps.UrlTile;
   } catch (e) {
     console.warn('Maps not loaded:', e);
     MapView = View;
     Marker = View;
     Callout = View;
+    UrlTile = View;
   }
 } else {
   // Web fallback
@@ -39,6 +42,7 @@ if (Platform.OS !== 'web') {
   );
   Marker = View;
   Callout = View;
+  UrlTile = View;
 }
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -55,18 +59,19 @@ import { CATEGORIES, getCategoryColor, getCategoryLabel } from '../../constants/
 import type { Issue } from '../../types';
 
 const { width, height } = Dimensions.get('window');
-const MAP_HEIGHT = height * 0.45; // 45% of screen height for map
+const MAP_HEIGHT = height * 0.55; // Increased height for better visibility
 
-// Dummy markers for demonstration with coordinates
+// Dummy markers for demonstration with coordinates (Ahmedabad)
 const DUMMY_MARKERS: { id: string; category: string; title: string; status: string; latitude: number; longitude: number }[] = [
-  { id: 'd1', category: 'pothole', title: 'Pothole on Main St', status: 'reported', latitude: 19.0760, longitude: 72.8777 },
-  { id: 'd2', category: 'garbage', title: 'Garbage pile near park', status: 'in_progress', latitude: 19.0800, longitude: 72.8820 },
-  { id: 'd3', category: 'streetlight', title: 'Broken streetlight', status: 'reported', latitude: 19.0720, longitude: 72.8750 },
-  { id: 'd4', category: 'drainage', title: 'Blocked drain', status: 'solved', latitude: 19.0780, longitude: 72.8700 },
+  { id: 'd1', category: 'pothole', title: 'Pothole on CG Road', status: 'reported', latitude: 23.0225, longitude: 72.5714 },
+  { id: 'd2', category: 'garbage', title: 'Garbage pile near Law Garden', status: 'in_progress', latitude: 23.0250, longitude: 72.5600 },
+  { id: 'd3', category: 'streetlight', title: 'Broken streetlight at Vastrapur', status: 'reported', latitude: 23.0400, longitude: 72.5300 },
+  { id: 'd4', category: 'drainage', title: 'Blocked drain in Satellite', status: 'solved', latitude: 23.0300, longitude: 72.5200 },
 ];
 
 export default function MapScreen() {
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
   const { userLocation, hasLocationPermission, isLocationLoading, selectedCategories } =
     useAppSelector((state) => state.map);
 
@@ -81,8 +86,10 @@ export default function MapScreen() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   useEffect(() => {
-    requestLocationPermission();
-  }, []);
+    if (user?.preferences?.locationServices !== false) {
+      requestLocationPermission();
+    }
+  }, [user?.preferences?.locationServices]);
 
   const requestLocationPermission = async () => {
     dispatch(setLocationLoading(true));
@@ -188,14 +195,19 @@ export default function MapScreen() {
           <MapView
             style={styles.map}
             initialRegion={{
-              latitude: userLocation.latitude,
-              longitude: userLocation.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
+              latitude: userLocation.latitude || 23.0225, // Default to Ahmedabad if no user location yet
+              longitude: userLocation.longitude || 72.5714,
+              latitudeDelta: 0.05,
+              longitudeDelta: 0.05,
             }}
             showsUserLocation
             showsMyLocationButton={false} // We use our custom button
           >
+            <UrlTile
+              urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maximumZ={19}
+              zIndex={-1}
+            />
             {filteredIssues.map((issue) => (
               <Marker
                 key={issue.id}

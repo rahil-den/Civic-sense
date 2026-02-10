@@ -9,4 +9,7 @@ export default defineConfig({
       "@": "/src",
     },
   },
+  server: {
+    allowedHosts: ['emma-checks-springfield-sku.trycloudflare.com'],
+  },
 })

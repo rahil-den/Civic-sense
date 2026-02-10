@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MoreHorizontal, Search, Filter } from "lucide-react";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { IssueActionDialog } from "./IssueActionDialog";
@@ -52,7 +53,9 @@ export const IssuesPage = () => {
                 reportedBy: item.userId?.name || 'Anonymous',
                 createdAt: item.createdAt,
                 updatedAt: item.updatedAt,
-                remarks: []
+                remarks: item.remarks || [],
+                isImportant: item.isImportant || false,
+                timeline: item.timeline || []
             }));
             setIssues(data);
         } catch (error) {
@@ -103,6 +106,22 @@ export const IssuesPage = () => {
         }
     };
 
+
+
+    const handleToggleImportant = async (id: string) => {
+        try {
+            await api.put(`/issues/${id}/important`);
+            setIssues(prev => prev.map(i =>
+                i.id === id ? { ...i, isImportant: !i.isImportant } : i
+            ));
+            if (selectedIssue && selectedIssue.id === id) {
+                setSelectedIssue(prev => prev ? { ...prev, isImportant: !prev.isImportant } : null);
+            }
+        } catch (error) {
+            console.error("Failed to toggle important", error);
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -145,9 +164,16 @@ export const IssuesPage = () => {
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
-                            <TableRow>
-                                <TableCell colSpan={6} className="text-center py-10">Loading issues...</TableCell>
-                            </TableRow>
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-12 w-12 rounded-md" /></TableCell>
+                                    <TableCell><div className="space-y-1"><Skeleton className="h-4 w-48" /><Skeleton className="h-3 w-32" /></div></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto rounded-md" /></TableCell>
+                                </TableRow>
+                            ))
                         ) : filteredIssues.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={6} className="text-center py-10">No issues found.</TableCell>
@@ -215,6 +241,7 @@ export const IssuesPage = () => {
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSave={handleSaveIssue}
+                onToggleImportant={handleToggleImportant}
             />
         </div>
     );

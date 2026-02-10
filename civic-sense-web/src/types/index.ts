@@ -33,6 +33,15 @@ export interface Issue {
     resolvedAt?: string;
     remarks?: string[];
     department?: string;
+    isImportant?: boolean;
+    timeline?: TimelineEvent[];
+}
+
+export interface TimelineEvent {
+    action: string;
+    by: any; // Populated user object or ID
+    note: string;
+    timestamp: string;
 }
 
 export interface AnalyticsSummary {
