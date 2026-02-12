@@ -21,6 +21,7 @@
 - [Getting Started](#-getting-started)
 - [Environment Variables](#-environment-variables)
 - [API Reference](#-api-reference)
+- [Contributors / Made by](#-contributors)
 
 ---
 
@@ -337,6 +338,15 @@ SOCKET_URL=http://localhost:3000
 3. Commit changes (`git commit -m 'Add AmazingFeature'`)
 4. Push to branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+---
+
+## 👥 Contributors
+
+- [Rahil](https://github.com/rahil-den)
+- [Iyan](https://github.com/iyan-devcore)
+- [Talha](https://github.com/Talha201111)
+- [Kaif](https://github.com/KaifCodes20)
 
 ---
 
