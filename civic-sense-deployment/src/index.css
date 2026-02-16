@@ -1,0 +1,257 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@import "tailwindcss";
+
+/* Hide default scrollbar */
+html {
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+html::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Edge */
+}
+
+@theme {
+  --color-background: hsl(220 20% 97%);
+  --color-foreground: hsl(220 25% 12%);
+
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(220 25% 12%);
+
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(220 25% 12%);
+
+  --color-primary: hsl(222 100% 56%);
+  --color-primary-foreground: hsl(0 0% 100%);
+
+  --color-secondary: hsl(210 100% 94%);
+  --color-secondary-foreground: hsl(222 80% 30%);
+
+  --color-muted: hsl(220 15% 92%);
+  --color-muted-foreground: hsl(220 10% 45%);
+
+  --color-accent: hsl(210 80% 70%);
+  --color-accent-foreground: hsl(222 100% 15%);
+
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+
+  --color-border: hsl(220 15% 88%);
+  --color-input: hsl(220 15% 88%);
+  --color-ring: hsl(222 100% 56%);
+
+  --color-civic-blue: hsl(222 100% 56%);
+  --color-civic-blue-dark: hsl(222 100% 40%);
+  --color-civic-blue-light: hsl(210 100% 94%);
+  --color-civic-slate: hsl(220 25% 12%);
+  --color-civic-charcoal: hsl(220 15% 25%);
+  --color-civic-sky: hsl(210 80% 70%);
+
+  --radius: 0.75rem;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ── Base styles ── */
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Dark mode overrides ── */
+.dark {
+  --color-background: hsl(222 30% 6%);
+  --color-foreground: hsl(210 40% 95%);
+  --color-card: hsl(222 30% 10%);
+  --color-card-foreground: hsl(210 40% 95%);
+  --color-popover: hsl(222 30% 10%);
+  --color-popover-foreground: hsl(210 40% 95%);
+  --color-primary: hsl(222 100% 60%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-secondary: hsl(222 40% 18%);
+  --color-secondary-foreground: hsl(210 40% 90%);
+  --color-muted: hsl(222 30% 15%);
+  --color-muted-foreground: hsl(215 20% 65%);
+  --color-accent: hsl(210 60% 50%);
+  --color-accent-foreground: hsl(210 40% 95%);
+  --color-destructive: hsl(0 63% 31%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-border: hsl(222 30% 18%);
+  --color-input: hsl(222 30% 18%);
+  --color-ring: hsl(222 100% 60%);
+}
+
+/* ── Component styles ── */
+.civic-gradient-overlay {
+  background: linear-gradient(to top,
+      var(--color-civic-blue) 0%,
+      color-mix(in srgb, var(--color-civic-blue) 80%, transparent) 20%,
+      color-mix(in srgb, var(--color-civic-blue) 40%, transparent) 50%,
+      transparent 100%);
+}
+
+.civic-btn-hero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.75rem 2rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--color-civic-blue) 35%, transparent);
+}
+
+.civic-btn-hero:hover {
+  box-shadow: 0 6px 30px color-mix(in srgb, var(--color-civic-blue) 50%, transparent);
+  transform: translateY(-2px);
+}
+
+.civic-btn-outline-hero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.75rem 2rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  border: 1.5px solid color-mix(in srgb, var(--color-primary-foreground) 60%, transparent);
+  color: var(--color-primary-foreground);
+  background: transparent;
+}
+
+.civic-btn-outline-hero:hover {
+  background: color-mix(in srgb, var(--color-primary-foreground) 10%, transparent);
+  border-color: var(--color-primary-foreground);
+}
+
+.civic-btn-footer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.75rem 2rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: all 0.3s;
+  background-color: var(--color-primary-foreground);
+  color: var(--color-civic-blue);
+}
+
+.civic-btn-footer:hover {
+  background-color: var(--color-civic-blue);
+  color: var(--color-primary-foreground);
+  box-shadow: 0 4px 20px hsl(0 0% 0% / 0.2);
+}
+
+.civic-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  background-color: color-mix(in srgb, var(--color-primary-foreground) 15%, transparent);
+  color: var(--color-primary-foreground);
+  backdrop-filter: blur(4px);
+  border: 1px solid color-mix(in srgb, var(--color-primary-foreground) 20%, transparent);
+}
+
+.civic-nav-btn:hover {
+  background-color: color-mix(in srgb, var(--color-primary-foreground) 25%, transparent);
+}
+
+.phone-frame {
+  position: relative;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 2.5rem;
+  border: 6px solid var(--color-civic-slate);
+  padding: 0.25rem;
+  overflow: hidden;
+  background: var(--color-civic-slate);
+  box-shadow:
+    0 25px 60px hsl(0 0% 0% / 0.25),
+    0 10px 20px hsl(0 0% 0% / 0.15),
+    inset 0 1px 0 hsl(0 0% 100% / 0.1);
+}
+
+.phone-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 0 0 1rem 1rem;
+  z-index: 10;
+  width: 120px;
+  height: 24px;
+  background: var(--color-civic-slate);
+}
+
+.phone-screen {
+  position: relative;
+  width: 100%;
+  border-radius: 2rem;
+  overflow: hidden;
+  background: var(--color-background);
+  aspect-ratio: 9 / 19.5;
+}
+
+.civic-card-author {
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all 0.3s;
+  background: var(--color-card);
+  box-shadow: 0 4px 20px hsl(0 0% 0% / 0.08);
+}
+
+.civic-card-author:hover {
+  box-shadow: 0 8px 40px color-mix(in srgb, var(--color-civic-blue) 15%, transparent);
+  transform: translateY(-4px);
+}
+
+.civic-glow {
+  box-shadow:
+    0 0 60px color-mix(in srgb, var(--color-civic-blue) 20%, transparent),
+    0 0 120px color-mix(in srgb, var(--color-civic-blue) 10%, transparent);
+}
+
+.nav-circle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  border: 2px solid var(--color-civic-blue);
+  transition: all 0.3s;
+  color: var(--color-civic-blue);
+}
+
+.nav-circle-btn:hover {
+  background-color: var(--color-civic-blue);
+  color: var(--color-primary-foreground);
+  transform: scale(1.1);
+}
