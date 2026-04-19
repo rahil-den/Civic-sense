@@ -24,6 +24,7 @@ import { useAppDispatch } from '../store';
 // import { addIssue } from '../store/slices/issueSlice';
 import { useCreateIssueMutation, useGetIssueCategoriesQuery } from '../services/issueApi';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import { globalImageBase64Value } from './(tabs)/addreport';
 // import { CATEGORIES } from '../constants/categories';
 import type { IssueCategory, Issue } from '../types';
 
@@ -31,7 +32,6 @@ export default function IssueFormScreen() {
     const dispatch = useAppDispatch();
     const params = useLocalSearchParams<{
         imageUri: string;
-        imageBase64: string;
         latitude: string;
         longitude: string;
         address: string;
@@ -80,7 +80,7 @@ export default function IssueFormScreen() {
                 title: title.trim(),
                 description: description.trim(),
                 category: category, // This should be the ID
-                imageUrl: `data:image/jpeg;base64,${params.imageBase64}`,
+                imageUrl: `data:image/jpeg;base64,${globalImageBase64Value}`,
                 location: {
                     latitude: parseFloat(params.latitude),
                     longitude: parseFloat(params.longitude),

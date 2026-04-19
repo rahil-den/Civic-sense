@@ -61,7 +61,7 @@ export default function SignUpScreen() {
     const handleBackendGoogleLogin = async (idToken: string) => {
         try {
             setIsLoading(true);
-            const API_URL = 'http://192.168.1.8:3000/api/auth/google';
+            const API_URL = 'http://192.168.1.9:3000/api/auth/google';
 
             const res = await fetch(API_URL, {
                 method: 'POST',

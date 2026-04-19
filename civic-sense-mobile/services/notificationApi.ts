@@ -10,6 +10,19 @@ export const notificationApi = api.injectEndpoints({
         // Get all notifications
         getNotifications: builder.query<Notification[], void>({
             query: () => '/notifications',
+            transformResponse: (response: any) => {
+                return (response.notifications || []).map((n: any) => ({
+                    id: n._id || n.id,
+                    title: n.title,
+                    description: n.message || n.description,
+                    type: n.title?.includes('Resolved') ? 'resolved' :
+                          n.title?.includes('Received') ? 'received' :
+                          n.type === 'WARNING' ? 'warning' : 'status_update',
+                    issueId: n.issueId,
+                    read: n.isRead,
+                    createdAt: n.createdAt,
+                }));
+            },
             providesTags: ['Notification'],
         }),
 

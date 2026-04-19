@@ -60,7 +60,7 @@ export default function LoginScreen() {
     const handleBackendGoogleLogin = async (idToken: string) => {
         try {
             setIsLoading(true);
-            const API_URL = 'http://192.168.1.8:3000/api/auth/google'; // Ensure this matches api.ts
+            const API_URL = `${API_BASE_URL}/auth/google`; // Updated to use dynamic API base URL
 
             const res = await fetch(API_URL, {
                 method: 'POST',

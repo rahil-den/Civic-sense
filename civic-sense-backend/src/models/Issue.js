@@ -22,7 +22,8 @@ const issueSchema = new mongoose.Schema({
         coordinates: {
             type: [Number], // [lng, lat]
             required: true
-        }
+        },
+        address: { type: String }
     },
 
     stateId: { type: mongoose.Schema.Types.ObjectId, ref: 'State' },

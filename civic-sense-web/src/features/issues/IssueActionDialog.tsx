@@ -105,7 +105,7 @@ export const IssueActionDialog = ({ issue, open, onOpenChange, onSave, onToggleI
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label className="text-right">Location</Label>
                                 <div className="col-span-3 text-sm text-slate-500 truncate">
-                                    {issue.location.address}
+                                    {issue.location.address || `${issue.location.lat?.toFixed(4)}, ${issue.location.lng?.toFixed(4)}`}
                                 </div>
                             </div>
 

@@ -53,6 +53,17 @@ export const createIssue = async (req, res) => {
         if (io) {
             io.emit('issueCreated', { issue });
             io.emit('analyticsUpdated', { cityId: cityId });
+            
+            // Notify the user who reported it
+            const notification = await Notification.create({
+                userId: req.user.id || req.user._id,
+                title: 'Report Received',
+                message: `Thank you for reporting "${title}". We're on it!`,
+                type: 'STATUS'
+            });
+            // We cannot emit to specific user easily without a Map in socket.io, so we emit universally and client filters, OR we just let the client refetch
+            // But socketService in the app listens to `notification:new` and it will just receive it
+            io.emit('notification:new', notification);
         }
 
         res.status(201).json(issue);
@@ -150,7 +161,7 @@ export const updateStatus = async (req, res) => {
             });
 
             // Notify User
-            await Notification.create({
+            const notification = await Notification.create({
                 userId: issue.userId,
                 title: 'Issue Update',
                 message: `Your issue "${issue.title}" status has been updated to ${status}.`,
@@ -170,6 +181,7 @@ export const updateStatus = async (req, res) => {
             if (io) {
                 io.emit('issueUpdated', { issueId: issue._id, status });
                 io.emit('analyticsUpdated', { cityId: issue.cityId });
+                io.emit('notification:new', notification);
             }
         } catch (postUpdateError) {
             console.error('Post-update error in issueController:', postUpdateError);
@@ -226,7 +238,7 @@ export const resolveIssue = async (req, res) => {
         });
 
         // Notify User
-        await Notification.create({
+        const notification = await Notification.create({
             userId: issue.userId,
             title: 'Issue Resolved',
             message: `Great news! Your issue "${issue.title}" has been resolved.`,
@@ -243,6 +255,7 @@ export const resolveIssue = async (req, res) => {
         if (io) {
             io.emit('issueUpdated', { issueId: issue._id, status: 'SOLVED' });
             io.emit('analyticsUpdated', { cityId: issue.cityId });
+            io.emit('notification:new', notification);
         }
 
         res.json({ message: 'Issue resolved successfully' });
@@ -339,12 +352,16 @@ export const toggleImportant = async (req, res) => {
         await issue.save();
 
         if (issue.isImportant) {
-            await Notification.create({
+            const notification = await Notification.create({
                 userId: issue.userId,
                 title: 'Issue flagged as Important',
                 message: `Your issue "${issue.title}" has been flagged as Important by the administration.`,
                 type: 'WARNING'
             });
+            const io = req.app.get('io');
+            if (io) {
+                io.emit('notification:new', notification);
+            }
         }
 
         res.json({

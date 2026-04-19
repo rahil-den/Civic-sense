@@ -18,6 +18,7 @@ import { useAppSelector, useAppDispatch } from '../../store';
 import {
   markAsRead,
   markAllAsRead,
+  setNotifications,
 } from '../../store/slices/notificationSlice';
 import { useGetNotificationsQuery } from '../../services/notificationApi';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -86,8 +87,14 @@ function formatTimeAgo(dateString: string): string {
 
 export default function UpdatesScreen() {
   const dispatch = useAppDispatch();
-  // const { notifications, unreadCount, isLoading } = useAppSelector((state) => state.notification);
-  const { data: notifications = [], isLoading, refetch } = useGetNotificationsQuery();
+  const { notifications, isLoading } = useAppSelector((state) => state.notification);
+  const { data: rtkData = [], isLoading: isRtkLoading, refetch } = useGetNotificationsQuery(); 
+  
+  React.useEffect(() => {
+    if (rtkData && rtkData.length > 0) {
+      dispatch(setNotifications(rtkData));
+    }
+  }, [rtkData, dispatch]);
 
   // Calculate unread count globally if needed, or just locally
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -322,6 +329,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   cardTitle: {
+    flex: 1,
+    marginRight: 8,
     fontSize: 15,
     fontWeight: '700',
     color: COLORS.textPrimary,
@@ -390,8 +399,8 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
   },
   expandIcon: {
-    marginLeft: 8,
-    marginTop: 16,
+    marginLeft: 4,
+    alignSelf: 'center', // Centers it vertically relative to the entire card
   },
   emptyWrapper: {
     flex: 1,

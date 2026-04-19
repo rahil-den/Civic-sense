@@ -2,10 +2,12 @@ import { io, Socket } from 'socket.io-client';
 import { store } from '../store';
 import { handleRealTimeUpdate } from '../store/slices/issueSlice';
 import { addNotification } from '../store/slices/notificationSlice';
+import { api } from './api';
 import type { Issue, Notification } from '../types';
+import { Alert } from 'react-native';
 
 // TODO: Update this to your actual backend URL
-const SOCKET_URL = 'http://192.168.1.8:3000';
+const SOCKET_URL = 'http://192.168.1.9:3000';
 // Set to true when you have a real backend server
 const SOCKET_ENABLED = true;
 
@@ -63,22 +65,35 @@ class SocketService {
             console.error('[Socket] Connection error:', error.message);
         });
 
-        // Listen for issue updates (new issues or status changes)
-        this.socket.on('issue:update', (issue: Issue) => {
-            console.log('[Socket] Issue update received:', issue.id);
-            store.dispatch(handleRealTimeUpdate(issue));
+        // Listen for issue updates (status changes)
+        this.socket.on('issueUpdated', (data: any) => {
+            console.log('[Socket] Issue update received:', data.issueId);
+            store.dispatch(handleRealTimeUpdate({ id: data.issueId, status: data.status } as any));
+            store.dispatch(api.util.invalidateTags([{ type: 'Issue', id: 'LIST' } as any, 'Issue']));
         });
 
         // Listen for new issues in community
-        this.socket.on('issue:new', (issue: Issue) => {
-            console.log('[Socket] New issue received:', issue.id);
-            store.dispatch(handleRealTimeUpdate(issue));
+        this.socket.on('issueCreated', (data: any) => {
+            console.log('[Socket] New issue received:', data.issue?.id || data.issue?._id);
+            if (data.issue) {
+                store.dispatch(handleRealTimeUpdate(data.issue));
+                store.dispatch(api.util.invalidateTags([{ type: 'Issue', id: 'LIST' } as any, 'Issue']));
+            }
         });
 
         // Listen for notifications
-        this.socket.on('notification:new', (notification: Notification) => {
-            console.log('[Socket] New notification:', notification.id);
+        this.socket.on('notification:new', async (notification: any) => {
+            const user = store.getState().auth.user;
+            if (notification.userId && user && String(notification.userId) !== String(user.id)) return;
+
+            console.log('[Socket] New notification:', notification.id || notification._id);
             store.dispatch(addNotification(notification));
+            
+            // Trigger local push notification popup (Fallback for Expo Go)
+            Alert.alert(
+                notification.title,
+                notification.description
+            );
         });
     }
 

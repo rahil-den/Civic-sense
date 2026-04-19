@@ -60,7 +60,7 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password_hash);
 };
 
-userSchema.index({ email: 1 });
+// userSchema.index({ email: 1 }); // Removed: duplicate index since email has unique: true
 userSchema.index({ role: 1 });
 
 const User = mongoose.model('User', userSchema);

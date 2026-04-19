@@ -5,10 +5,12 @@ import redisClient from '../config/redis.js';
 // Create a unified limiter
 // In production, you might want stricter limits for login vs analytics
 export const rateLimiter = rateLimit({
-    store: new RedisStore({
-        sendCommand: (...args) => redisClient.call(...args),
-        prefix: 'rl:', // distinct prefix for rate limiting keys
-    }),
+    store: process.env.USE_REDIS === 'true' 
+        ? new RedisStore({
+            sendCommand: (...args) => redisClient.call(...args),
+            prefix: 'rl:', // distinct prefix for rate limiting keys
+        })
+        : undefined, // Falls back to default MemoryStore
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 100, // Limit each IP to 100 requests per windowMs
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers

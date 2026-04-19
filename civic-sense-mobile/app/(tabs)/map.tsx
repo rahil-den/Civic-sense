@@ -202,9 +202,10 @@ export default function MapScreen() {
             }}
             showsUserLocation
             showsMyLocationButton={false} // We use our custom button
+            mapType={Platform.OS === 'android' ? 'none' : 'standard'}
           >
             <UrlTile
-              urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              urlTemplate="https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
               maximumZ={19}
               zIndex={-1}
             />

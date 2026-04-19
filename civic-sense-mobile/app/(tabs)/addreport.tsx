@@ -42,6 +42,8 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Button from '../../components/ui/Button';
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
 
+export let globalImageBase64Value = '';
+
 type CapturedPhoto = {
   uri: string;
   base64?: string;
@@ -159,14 +161,14 @@ export default function SnapshotScreen() {
 
     // Close modal first
     setShowConfirmModal(false);
-    setCapturedPhoto(null);
+    // Store base64 securely in global var to avoid router param limits
+    globalImageBase64Value = photoBase64;
 
     // Navigate immediately
     router.replace({
       pathname: '/issue-form',
       params: {
         imageUri: photoUri,
-        imageBase64: photoBase64,
         latitude: lat,
         longitude: lng,
         address: addr,
