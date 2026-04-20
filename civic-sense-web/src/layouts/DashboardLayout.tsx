@@ -160,12 +160,7 @@ export const DashboardLayout = () => {
                     </div>
 
                     <div className="flex items-center gap-4 ml-auto">
-                        <button
-                            onClick={() => navigate(isSuperAdminPath ? '/admin' : '/superadmin')}
-                            className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-md text-xs font-bold border border-indigo-200 hover:bg-indigo-100 transition-colors"
-                        >
-                            Switch to {isSuperAdminPath ? 'Admin' : 'Superadmin'}
-                        </button>
+                        {/* Removed switch button */}
 
                         <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
                             <Bell size={20} />

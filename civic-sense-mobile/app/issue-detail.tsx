@@ -104,7 +104,7 @@ export default function IssueDetailScreen() {
             {/* Image Section */}
             <View style={styles.imageSection}>
                 <Image
-                    source={{ uri: activeImageTab === 'before' ? issue.imageUrl : (issue.imageUrl + '?v=after') }}
+                    source={{ uri: activeImageTab === 'before' ? issue.imageUrl : (issue.resolvedImageUrl || (issue.imageUrl + '?v=after')) }}
                     style={styles.mainImage}
                 />
 

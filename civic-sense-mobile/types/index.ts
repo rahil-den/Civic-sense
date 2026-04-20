@@ -44,6 +44,7 @@ export interface Issue {
   distance?: string; // Calculated on client
   isImportant?: boolean;
   timeline?: TimelineEvent[];
+  resolvedImageUrl?: string;
 }
 
 export interface TimelineEvent {

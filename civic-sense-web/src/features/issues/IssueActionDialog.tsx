@@ -22,12 +22,13 @@ import {
 import { Issue, IssueStatus } from "@/types";
 import { Star, Clock, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
+import api from "@/services/api";
 
 interface IssueActionDialogProps {
     issue: Issue | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSave: (id: string, status: IssueStatus, remarks: string) => void;
+    onSave: (id: string, status: IssueStatus, remarks: string, resolvedImage?: string) => void;
     onToggleImportant: (id: string) => void;
 }
 
@@ -36,18 +37,32 @@ export const IssueActionDialog = ({ issue, open, onOpenChange, onSave, onToggleI
     const [remarks, setRemarks] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [isImportant, setIsImportant] = useState(false);
+    const [fullIssueData, setFullIssueData] = useState<any>(null);
 
     useEffect(() => {
-        if (issue) {
+        if (issue && open) {
             setStatus(issue.status); // set initial status
             setRemarks(''); // Reset remarks for new action
             setIsImportant(issue.isImportant || false);
+            setFullIssueData(null);
+            
+            api.get(`/issues/${issue.id}`).then(res => {
+                setFullIssueData(res.data);
+            }).catch(err => console.error("Failed to fetch full issue details", err));
         }
     }, [issue, open]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (issue) {
-            onSave(issue.id, status, remarks);
+            let fileBase64 = '';
+            if (file) {
+                fileBase64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.readAsDataURL(file);
+                });
+            }
+            onSave(issue.id, status, remarks, fileBase64);
             onOpenChange(false);
         }
     };
@@ -106,6 +121,34 @@ export const IssueActionDialog = ({ issue, open, onOpenChange, onSave, onToggleI
                                 <Label className="text-right">Location</Label>
                                 <div className="col-span-3 text-sm text-slate-500 truncate">
                                     {issue.location.address || `${issue.location.lat?.toFixed(4)}, ${issue.location.lng?.toFixed(4)}`}
+                                </div>
+                            </div>
+
+                            {/* Images Display */}
+                            <div className="grid grid-cols-2 gap-4 mt-2 mb-4">
+                                <div>
+                                    <Label className="mb-2 block text-xs font-semibold text-slate-500 uppercase tracking-wider">Original Proof</Label>
+                                    <div className="h-32 bg-slate-100 rounded-lg overflow-hidden border">
+                                        <img 
+                                            src={issue.images?.[0] || fullIssueData?.issue?.images?.[0] || "https://placehold.co/400x300"} 
+                                            alt="Before" 
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <Label className="mb-2 block text-xs font-semibold text-slate-500 uppercase tracking-wider">Resolution Proof</Label>
+                                    <div className="h-32 bg-slate-100 rounded-lg overflow-hidden border flex items-center justify-center">
+                                        {fullIssueData?.resolution?.resolvedImage ? (
+                                            <img 
+                                                src={fullIssueData.resolution.resolvedImage} 
+                                                alt="After" 
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <span className="text-xs text-slate-400">No proof available</span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 

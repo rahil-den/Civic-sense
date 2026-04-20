@@ -54,6 +54,7 @@ export const issueApi = api.injectEndpoints({
                     userId: issue.userId?._id || issue.userId,
                     createdAt: issue.createdAt,
                     updatedAt: issue.updatedAt,
+                    resolvedImageUrl: response.resolution?.resolvedImage,
                 };
             },
             providesTags: (result, error, id) => [{ type: 'Issue', id }],

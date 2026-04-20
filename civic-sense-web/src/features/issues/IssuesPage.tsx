@@ -81,12 +81,12 @@ export const IssuesPage = () => {
         setDialogOpen(true);
     };
 
-    const handleSaveIssue = async (id: string, status: IssueStatus, remarks: string) => {
+    const handleSaveIssue = async (id: string, status: IssueStatus, remarks: string, resolvedImage: string = "") => {
         try {
             if (status === 'resolved') {
                 await api.post(`/issues/${id}/resolve`, {
                     resolutionNotes: remarks,
-                    resolvedImage: ""
+                    resolvedImage: resolvedImage
                 });
             } else {
                 const backendStatus =

@@ -165,7 +165,7 @@ export default function SnapshotScreen() {
     globalImageBase64Value = photoBase64;
 
     // Navigate immediately
-    router.replace({
+    router.push({
       pathname: '/issue-form',
       params: {
         imageUri: photoUri,

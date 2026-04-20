@@ -7,7 +7,7 @@ import type { Issue, Notification } from '../types';
 import { Alert } from 'react-native';
 
 // TODO: Update this to your actual backend URL
-const SOCKET_URL = 'http://192.168.1.9:3000';
+const SOCKET_URL = 'http://192.168.1.13:3000';
 // Set to true when you have a real backend server
 const SOCKET_ENABLED = true;
 

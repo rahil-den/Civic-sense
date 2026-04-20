@@ -62,7 +62,7 @@ function App() {
                 <Route
                     path="/admin"
                     element={
-                        <ProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                        <ProtectedRoute allowedRoles={['ADMIN']}>
                             <DashboardLayout />
                         </ProtectedRoute>
                     }

@@ -110,7 +110,7 @@ export const getIssueById = async (req, res) => {
         if (!issue) return res.status(404).json({ message: 'Issue not found' });
 
         const history = await IssueStatusHistory.find({ issueId: issue._id }).sort({ createdAt: 1 }).populate('changedBy', 'name');
-        const resolution = await IssueResolution.findOne({ issueId: issue._id }).populate('resolvedBy', 'name');
+        const resolution = await IssueResolution.findOne({ issueId: issue._id }).sort({ _id: -1 }).populate('resolvedBy', 'name');
 
         res.json({ issue, history, resolution });
     } catch (error) {
