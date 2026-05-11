@@ -46,20 +46,20 @@ export default function IssueDetailScreen() {
     if (isLoading && !issue) {
         return (
             <SafeAreaView style={styles.container}>
-                <View style={{ height: 300, width: '100%', backgroundColor: COLORS.card }}>
+                <View style={{ height: 300, width: '100%', backgroundColor: COLORS.surface }}>
                     <Skeleton height="100%" borderRadius={0} />
                 </View>
-                <View style={{ padding: SPACING.m }}>
-                    <Skeleton height={28} width="80%" style={{ marginBottom: SPACING.s }} />
-                    <Skeleton height={20} width="40%" style={{ marginBottom: SPACING.l }} />
+                <View style={{ padding: SPACING.md }}>
+                    <Skeleton height={28} width="80%" style={{ marginBottom: SPACING.sm }} />
+                    <Skeleton height={20} width="40%" style={{ marginBottom: SPACING.lg }} />
 
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.m }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.md }}>
                         <Skeleton height={60} width="30%" />
                         <Skeleton height={60} width="30%" />
                         <Skeleton height={60} width="30%" />
                     </View>
 
-                    <Skeleton height={100} width="100%" borderRadius={BORDER_RADIUS.m} />
+                    <Skeleton height={100} width="100%" borderRadius={BORDER_RADIUS.md} />
                 </View>
             </SafeAreaView>
         );

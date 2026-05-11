@@ -65,7 +65,7 @@ export default function Button({
                             styles.text,
                             styles[`${variant}Text` as keyof typeof styles] as TextStyle,
                             styles[`${size}Text` as keyof typeof styles] as TextStyle,
-                            icon && { marginLeft: SPACING.sm },
+                            !!icon && { marginLeft: SPACING.sm },
                         ]}
                     >
                         {title}

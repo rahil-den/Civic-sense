@@ -2,12 +2,12 @@ import { io, Socket } from 'socket.io-client';
 import { store } from '../store';
 import { handleRealTimeUpdate } from '../store/slices/issueSlice';
 import { addNotification } from '../store/slices/notificationSlice';
-import { api } from './api';
+import { api, API_BASE_URL } from './api';
 import type { Issue, Notification } from '../types';
 import { Alert } from 'react-native';
 
-// TODO: Update this to your actual backend URL
-const SOCKET_URL = 'http://192.168.1.13:3000';
+// Import API_BASE_URL and remove the /api part for socket connection
+const SOCKET_URL = API_BASE_URL.replace(/\/api$/, '');
 // Set to true when you have a real backend server
 const SOCKET_ENABLED = true;
 

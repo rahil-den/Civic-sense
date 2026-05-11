@@ -264,7 +264,7 @@ export default function SnapshotScreen() {
         ref={cameraRef}
         style={styles.camera}
         facing={facing}
-      >
+      />
         {/* Header */}
         <SafeAreaView style={styles.cameraHeader} edges={['top']}>
           <View style={styles.headerRow}>
@@ -308,7 +308,6 @@ export default function SnapshotScreen() {
           </TouchableOpacity>
           <Text style={styles.captureHint}>Tap to capture</Text>
         </SafeAreaView>
-      </CameraView>
 
       {/* Photo Confirmation Modal */}
       <Modal
